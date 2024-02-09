@@ -8,6 +8,7 @@ import sys
 sys.path.append('i:\\Git Repos\\CartPole-RL')
 
 from src.agents.ql import QLAgent
+from src.utils.bucketize import bucketize
 
 if __name__ == "__main__":
 
@@ -29,16 +30,19 @@ if __name__ == "__main__":
     )
 
     env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = n_episodes)
+    obs_bounds = list(zip(env.observation_space.low, env.observation_space.high))
     for episode in tqdm(range(n_episodes)):
         obs, info = env.reset()
         done = False
-
+        obs = bucketize(obs, obs_bounds)
         # play one episode
         while not done:
+            
             action = agent.select_action(obs)
             next_obs, reward, terminated, truncated, info = env.step(action)
 
             # update the agent
+            next_obs = bucketize(next_obs, obs_bounds)
             agent.update(obs, action, reward, terminated, next_obs)
 
             # update if the environment is done and the current obs

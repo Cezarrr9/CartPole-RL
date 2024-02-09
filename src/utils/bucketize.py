@@ -4,7 +4,7 @@ def bucketize(obs, obs_bounds):
     for i in range(len(obs)):
         if obs[i] <= obs_bounds[i][0]:
             bucket_index = 0
-        elif obs[i] >= obs[i][1]:
+        elif obs[i] >= obs_bounds[i][1]:
             bucket_index = n_buckets[i] - 1
         else:
             bound_width = obs_bounds[i][1] - obs_bounds[i][0]

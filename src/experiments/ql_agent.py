@@ -1,11 +1,24 @@
+import os
+import sys
 import matplotlib.pyplot as plt 
 import numpy as np
+import math
 
 import gymnasium as gym
 from tqdm import tqdm
 
-import sys 
-sys.path.append('i:\\Git Repos\\CartPole-RL')
+# Define the environment variable name
+env_var_name = 'CARTPOLE_RL_PATH'
+
+# Get the path from the environment variable
+module_path = os.getenv(env_var_name)
+
+# Check if the environment variable was set
+if module_path:
+    sys.path.append(module_path)
+else:
+    print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
+    sys.exit(1)
 
 from src.agents.ql import QLAgent
 from src.utils.bucketize import bucketize
@@ -31,6 +44,8 @@ if __name__ == "__main__":
 
     env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = n_episodes)
     obs_bounds = list(zip(env.observation_space.low, env.observation_space.high))
+    obs_bounds[1] = (-0.5, 0.5)
+    obs_bounds[3] = (-math.radians(50), math.radians(50))
     for episode in tqdm(range(n_episodes)):
         obs, info = env.reset()
         done = False

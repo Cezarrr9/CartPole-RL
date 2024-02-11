@@ -55,9 +55,9 @@ class DQNAgent():
 
         self.batch_size = batch_size
         self.discount_factor = discount_factor
-        self.eps_start = eps_start,
-        self.eps_end = eps_end,
-        self.eps_decay = eps_decay,
+        self.eps_start = eps_start
+        self.eps_end = eps_end
+        self.eps_decay = eps_decay
         self.tau = tau
         self.learning_rate = learning_rate
 

@@ -25,7 +25,7 @@ class QLAgent:
 
         self.training_error = []
 
-    def select_action(self, obs: np.ndarray) -> int:
+    def select_action(self, obs: tuple[float, float, float, float]) -> int:
 
         if np.random.random() < self.epsilon:
             return self.action_space.sample()
@@ -34,11 +34,11 @@ class QLAgent:
             return int(np.argmax(self.q_values[tuple(obs)]))
         
     def update(self,
-               obs: np.ndarray,
+               obs: tuple[float, float, float, float],
                action: int,
                reward: int,
                terminated: bool,
-               next_obs: np.ndarray) -> None:
+               next_obs: tuple[float, float, float]) -> None:
 
         future_q_value = (not terminated) * np.max(self.q_values[tuple(next_obs)])
         temporal_difference = reward + self.discount_factor * future_q_value - self.q_values[tuple(obs)][action]

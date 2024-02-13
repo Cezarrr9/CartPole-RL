@@ -31,7 +31,7 @@ class QLAgent:
             return self.action_space.sample()
         
         else:
-            return int(np.argmax(self.q_values[tuple(obs)]))
+            return int(np.argmax(self.q_values[obs]))
         
     def update(self,
                obs: tuple[float, float, float, float],
@@ -41,9 +41,9 @@ class QLAgent:
                next_obs: tuple[float, float, float]) -> None:
 
         future_q_value = (not terminated) * np.max(self.q_values[tuple(next_obs)])
-        temporal_difference = reward + self.discount_factor * future_q_value - self.q_values[tuple(obs)][action]
+        temporal_difference = reward + self.discount_factor * future_q_value - self.q_values[obs][action]
 
-        self.q_values[tuple(obs)][action] += self.learning_rate * temporal_difference
+        self.q_values[obs][action] += self.learning_rate * temporal_difference
 
         self.training_error.append(temporal_difference)
 

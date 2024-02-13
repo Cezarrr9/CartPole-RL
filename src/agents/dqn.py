@@ -52,9 +52,12 @@ class DQNAgent:
 
         self.memory = ReplayMemory(1000)
 
-    def select_action(self):
-
-        pass
+    def select_action(self, obs):
+        if random.random() < self.epsilon:
+            return random.sample(self.action_space, 1)
+        
+        else:
+            return np.argmax(self.q_values[obs])
 
     def learn(self, num_episodes):
         pass

@@ -7,6 +7,7 @@ from collections import deque, namedtuple, defaultdict
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F 
 
 # Define the environment variable name
 env_var_name = 'CARTPOLE_RL_PATH'
@@ -41,11 +42,16 @@ class ReplayMemory(object):
     
 class DQN(nn.Module):
 
-    def __init__(self):
-        pass
+    def __init__(self, n_obs, n_actions):
+        super(DQN, self).__init__()
+        self.layer1 = nn.Linear(n_obs, 256)
+        self.layer2 = nn.Linear(256, 256)
+        self.layer3 = nn.Linear(256, n_actions)
 
     def forward(self, obs):
-        pass
+        obs = F.relu(self.layer1(obs))
+        obs = F.relu(self.layer2(obs))
+        return self.layer3(obs)
 
 class DQNAgent:
 

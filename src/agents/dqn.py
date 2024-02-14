@@ -73,12 +73,12 @@ class DQNAgent:
 
     def select_action(self, state) -> int:
         
-        if np.random.random < self.epsilon:
+        if np.random.random() < self.epsilon:
             with torch.no_grad():
                 return self.policy_net(state).max(1).indices.view(1, 1)
         
         else:
-            torch.tensor([self.action_space.sample()], dtype = torch.long)
+            return torch.tensor([[self.action_space.sample()]], dtype = torch.long)
 
     def decay_epsilon(self) -> None:
         self.epsilon = max(self.epsilon_end, self.epsilon - self.epsilon_decay)
@@ -104,7 +104,7 @@ class DQNAgent:
         with torch.no_grad():
             next_q_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
 
-        expected_q_values = reward_batch + self.gamma * next_q_values
+        expected_q_values = reward_batch + self.discount_factor * next_q_values
 
         # Compute Huber loss
         criterion = nn.SmoothL1Loss()
@@ -124,11 +124,10 @@ class DQNAgent:
             state, info = env.reset()
             state = torch.tensor(state, dtype = torch.float32).unsqueeze(0)
 
-            self.target_net.load_state_dict(self.policy_net.state_dict())
-
             for t in range(num_timesteps):
                 action = self.select_action(state)
-                obs, reward, terminated, truncated, info = env.step(action)
+                self.decay_epsilon()
+                obs, reward, terminated, truncated, info = env.step(action.item())
                 reward = torch.tensor([reward])
                 done = terminated or truncated 
 
@@ -143,4 +142,6 @@ class DQNAgent:
 
                 if done:
                     break
+            
+            self.target_net.load_state_dict(self.policy_net.state_dict())
 

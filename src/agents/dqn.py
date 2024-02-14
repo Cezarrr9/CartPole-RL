@@ -4,25 +4,12 @@ import sys
 import random
 import numpy as np
 from collections import deque, namedtuple, defaultdict
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F 
-
-# Define the environment variable name
-env_var_name = 'CARTPOLE_RL_PATH'
-
-# Get the path from the environment variable
-module_path = os.getenv(env_var_name)
-
-# Check if the environment variable was set
-if module_path:
-    sys.path.append(module_path)
-else:
-    print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
-    sys.exit(1)
-
-from src.utils.bucketize import bucketize
+import torch.optim as optim
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
 
@@ -57,12 +44,13 @@ class DQNAgent:
 
     def __init__(self, 
                  action_space,
+                 n_obs: int,
                  learning_rate: float, 
                  discount_factor: float, 
                  epsilon_start: float,
                  epsilon_end: float,
                  epsilon_decay: float):
-        
+
         self.action_space = action_space
 
         self.q_values = defaultdict(lambda: np.zeros(action_space.n))
@@ -74,9 +62,15 @@ class DQNAgent:
         self.epsilon_end = epsilon_end
         self.epsilon_decay = epsilon_decay
 
+        self.policy_net = DQN(n_obs, action_space.n)
+        self.target_net = DQN(n_obs, action_space.n)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr = learning_rate, amsgrad = True)
+
         self.memory = ReplayMemory(1000)
 
-    def select_action(self, obs):
+    def select_action(self, obs) -> int:
         if np.random.random() < self.epsilon:
             return self.action_space.sample()
         
@@ -86,20 +80,10 @@ class DQNAgent:
     def decay_epsilon(self) -> None:
         self.epsilon = max(self.epsilon_end, self.epsilon - self.epsilon_decay)
 
-    def learn(self, env, num_episodes):
-        obs_bounds = []
-        for i in range(num_episodes):
-            # play one episode
-            while not done:
-                
-                action = self.select_action(obs)
-                next_obs, reward, terminated, truncated, info = env.step(action)
+    def learn(self, env, num_episodes, num_timesteps):
 
-                # update the agent
-                next_obs = bucketize(next_obs, obs_bounds)
-                self.update(obs, action, reward, terminated, next_obs)
+        for i in tqdm(range(num_episodes)):
+            obs, info = env.reset()
 
-                # update if the environment is done and the current obs
-                done = terminated or truncated
-                obs = next_obs
-        pass
+            for t in range(num_timesteps):
+                pass

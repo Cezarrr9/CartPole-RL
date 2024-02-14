@@ -40,7 +40,7 @@ class QLAgent:
                terminated: bool,
                next_obs: tuple[float, float, float]) -> None:
 
-        future_q_value = (not terminated) * np.max(self.q_values[tuple(next_obs)])
+        future_q_value = (not terminated) * np.max(self.q_values[next_obs])
         temporal_difference = reward + self.discount_factor * future_q_value - self.q_values[obs][action]
 
         self.q_values[obs][action] += self.learning_rate * temporal_difference

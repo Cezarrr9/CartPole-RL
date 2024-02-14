@@ -45,6 +45,7 @@ class DQNAgent:
     def __init__(self, 
                  action_space,
                  n_obs: int,
+                 batch_size: int,
                  learning_rate: float, 
                  discount_factor: float, 
                  epsilon_start: float,
@@ -53,7 +54,7 @@ class DQNAgent:
 
         self.action_space = action_space
 
-        self.q_values = defaultdict(lambda: np.zeros(action_space.n))
+        self.batch_size = batch_size
 
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
@@ -71,14 +72,23 @@ class DQNAgent:
         self.memory = ReplayMemory(1000)
 
     def select_action(self, obs) -> int:
-        if np.random.random() < self.epsilon:
-            return self.action_space.sample()
+        
+        if np.random.random < self.epsilon:
+            with torch.no_grad():
+                return self.policy_net(obs).max(1).indices.view(1, 1)
         
         else:
-            return int(np.argmax(self.q_values[obs]))
+            torch.tensor([self.action_space.sample()], dtype = torch.long)
 
     def decay_epsilon(self) -> None:
         self.epsilon = max(self.epsilon_end, self.epsilon - self.epsilon_decay)
+
+    def update_policy_net(self):
+
+        if len(self.memory) < self.batch_size:
+            return 
+        
+
 
     def learn(self, env, num_episodes, num_timesteps):
 

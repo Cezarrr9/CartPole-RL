@@ -93,8 +93,7 @@ class DQNAgent:
 
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                           batch.next_state)), dtype = torch.bool)
-        non_final_next_states = torch.cat([s for s in batch.next_state
-                                                    if s is not None])
+        non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
@@ -114,16 +113,18 @@ class DQNAgent:
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
-        
+
         # In-place gradient clipping
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
         
-    def learn(self, env, num_episodes, num_timesteps):
+    def train(self, env, num_episodes, num_timesteps):
 
         for i in tqdm(range(num_episodes)):
             state, info = env.reset()
             state = torch.tensor(state, dtype = torch.float32).unsqueeze(0)
+
+            self.target_net.load_state_dict(self.policy_net.state_dict())
 
             for t in range(num_timesteps):
                 action = self.select_action(state)
@@ -136,6 +137,10 @@ class DQNAgent:
                 else:
                     next_state = torch.tensor(obs, dtype = torch.float32).unsqueeze(0)
 
-
                 self.memory.push(state, action, reward, next_state)
+
+                self.update_policy_net()
+
+                if done:
+                    break
 

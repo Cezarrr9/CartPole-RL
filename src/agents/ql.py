@@ -1,6 +1,26 @@
+import os
+import sys
+
 import numpy as np
 from collections import defaultdict
 import gymnasium as gym
+import math
+from tqdm import tqdm 
+
+# Define the environment variable name
+env_var_name = 'CARTPOLE_RL_PATH'
+
+# Get the path from the environment variable
+module_path = os.getenv(env_var_name)
+
+# Check if the environment variable was set
+if module_path:
+    sys.path.append(module_path)
+else:
+    print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
+    sys.exit(1)
+
+from src.utils.bucketize import bucketize
 
 class QLAgent:
 
@@ -50,5 +70,30 @@ class QLAgent:
     def decay_epsilon(self) -> None:
         self.epsilon = max(self.epsilon_end, self.epsilon - self.epsilon_decay)
 
+    def train(self, env, num_episodes: int):
+        env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = num_episodes)
+        obs_bounds = list(zip(env.observation_space.low, env.observation_space.high))
+        obs_bounds[1] = (-0.5, 0.5)
+        obs_bounds[3] = (-math.radians(50), math.radians(50))
+
+        for _ in tqdm(range(num_episodes)):
+            obs, info = env.reset()
+            done = False
+            obs = bucketize(obs, obs_bounds)
+            # play one episode
+            while not done:
+                
+                action = self.select_action(obs)
+                next_obs, reward, terminated, truncated, info = env.step(action)
+
+                # update the agent
+                next_obs = bucketize(next_obs, obs_bounds)
+                self.update(obs, action, reward, terminated, next_obs)
+
+                # update if the environment is done and the current obs
+                done = terminated or truncated
+                obs = next_obs
+
+            self.decay_epsilon()
 
         

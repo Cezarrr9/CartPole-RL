@@ -1,6 +1,3 @@
-import os
-import sys
-
 import random
 import numpy as np
 from collections import deque, namedtuple, defaultdict
@@ -29,7 +26,7 @@ class ReplayMemory(object):
     
 class DQN(nn.Module):
 
-    def __init__(self, n_obs, n_actions):
+    def __init__(self, n_obs: int, n_actions: int):
         super(DQN, self).__init__()
         self.layer1 = nn.Linear(n_obs, 256)
         self.layer2 = nn.Linear(256, 256)
@@ -71,7 +68,7 @@ class DQNAgent:
 
         self.memory = ReplayMemory(1000)
 
-    def select_action(self, state) -> int:
+    def select_action(self, state: torch.tensor) -> int:
         
         if np.random.random() < self.epsilon:
             with torch.no_grad():
@@ -118,16 +115,16 @@ class DQNAgent:
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
         
-    def train(self, env, num_episodes, num_timesteps):
+    def train(self, env, num_episodes: int, num_timesteps: int):
 
         for i in tqdm(range(num_episodes)):
-            state, info = env.reset()
+            state, _ = env.reset()
             state = torch.tensor(state, dtype = torch.float32).unsqueeze(0)
 
             for t in range(num_timesteps):
                 action = self.select_action(state)
                 self.decay_epsilon()
-                obs, reward, terminated, truncated, info = env.step(action.item())
+                obs, reward, terminated, truncated, _ = env.step(action.item())
                 reward = torch.tensor([reward])
                 done = terminated or truncated 
 

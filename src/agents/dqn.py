@@ -2,6 +2,7 @@ import random
 import numpy as np
 from collections import deque, namedtuple, defaultdict
 from tqdm import tqdm
+import gymnasium as gym
 
 import torch
 import torch.nn as nn
@@ -116,6 +117,7 @@ class DQNAgent:
         self.optimizer.step()
         
     def train(self, env, num_episodes: int, num_timesteps: int):
+        env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = num_episodes)
 
         for i in tqdm(range(num_episodes)):
             state, _ = env.reset()

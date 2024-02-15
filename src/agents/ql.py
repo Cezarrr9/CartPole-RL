@@ -20,7 +20,26 @@ else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
 
-from src.utils.bucketize import bucketize
+def bucketize(obs, obs_bounds):
+    n_buckets = (1, 1, 6, 3)
+    bucket_indices = []
+    for i in range(len(obs)):
+        
+        if obs[i] <= obs_bounds[i][0]:
+            bucket_index = 0
+
+        elif obs[i] >= obs_bounds[i][1]:
+            bucket_index = n_buckets[i] - 1
+
+        else:
+            bound_width = obs_bounds[i][1] - obs_bounds[i][0]
+            offset = (n_buckets[i] - 1) * obs_bounds[i][0] / bound_width
+            scaling = (n_buckets[i] - 1) / bound_width
+            bucket_index = int(round(scaling * obs[i] - offset))
+ 
+        bucket_indices.append(bucket_index)
+    
+    return tuple(bucket_indices)
 
 class QLAgent:
 
@@ -76,15 +95,15 @@ class QLAgent:
         obs_bounds[1] = (-0.5, 0.5)
         obs_bounds[3] = (-math.radians(50), math.radians(50))
 
-        for _ in tqdm(range(num_episodes)):
-            obs, info = env.reset()
+        for i in tqdm(range(num_episodes)):
+            obs, _ = env.reset()
             done = False
             obs = bucketize(obs, obs_bounds)
             # play one episode
             while not done:
                 
                 action = self.select_action(obs)
-                next_obs, reward, terminated, truncated, info = env.step(action)
+                next_obs, reward, terminated, truncated, _ = env.step(action)
 
                 # update the agent
                 next_obs = bucketize(next_obs, obs_bounds)

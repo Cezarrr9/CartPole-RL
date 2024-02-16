@@ -2,6 +2,7 @@ import os
 import sys
 
 import numpy as np
+import matplotlib.pyplot as plt
 from collections import defaultdict
 import gymnasium as gym
 import math
@@ -77,7 +78,7 @@ class QLAgent:
                action: int,
                reward: int,
                terminated: bool,
-               next_obs: tuple[float, float, float]) -> None:
+               next_obs: tuple[float, float, float, float]) -> None:
 
         future_q_value = (not terminated) * np.max(self.q_values[next_obs])
         temporal_difference = reward + self.discount_factor * future_q_value - self.q_values[obs][action]
@@ -96,14 +97,14 @@ class QLAgent:
         obs_bounds[3] = (-math.radians(50), math.radians(50))
 
         for i in tqdm(range(num_episodes)):
-            obs, _ = env.reset()
+            obs, info = env.reset()
             done = False
             obs = bucketize(obs, obs_bounds)
             # play one episode
             while not done:
                 
                 action = self.select_action(obs)
-                next_obs, reward, terminated, truncated, _ = env.step(action)
+                next_obs, reward, terminated, truncated, info = env.step(action)
 
                 # update the agent
                 next_obs = bucketize(next_obs, obs_bounds)
@@ -114,5 +115,33 @@ class QLAgent:
                 obs = next_obs
 
             self.decay_epsilon()
+        
+        rolling_length = 500
+        fig, axs = plt.subplots(ncols=3, figsize=(12, 5))
+        axs[0].set_title("Episode rewards")
+        # compute and assign a rolling average of the data to provide a smoother graph
+        reward_moving_average = (
+            np.convolve(
+                np.array(env.return_queue).flatten(), np.ones(rolling_length), mode="valid"
+            )
+            / rolling_length
+        )
+        axs[0].plot(range(len(reward_moving_average)), reward_moving_average)
+        axs[1].set_title("Episode lengths")
+        length_moving_average = (
+            np.convolve(
+                np.array(env.length_queue).flatten(), np.ones(rolling_length), mode="same"
+            )
+            / rolling_length
+        )
+        axs[1].plot(range(len(length_moving_average)), length_moving_average)
+        axs[2].set_title("Training Error")
+        training_error_moving_average = (
+            np.convolve(np.array(self.training_error), np.ones(rolling_length), mode="same")
+            / rolling_length
+        )
+        axs[2].plot(range(len(training_error_moving_average)), training_error_moving_average)
+        plt.tight_layout()
+        plt.show()
 
         

@@ -1,6 +1,10 @@
 import random
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from collections import deque, namedtuple, defaultdict
+from itertools import count
 from tqdm import tqdm
 import gymnasium as gym
 
@@ -118,8 +122,8 @@ class DQNAgent:
         
     def train(self, env, num_episodes: int, num_timesteps: int):
         env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = num_episodes)
-
-        for i in tqdm(range(num_episodes)):
+        reward_over_episodes = []
+        for episode in tqdm(range(num_episodes)):
             state, _ = env.reset()
             state = torch.tensor(state, dtype = torch.float32).unsqueeze(0)
 
@@ -142,5 +146,22 @@ class DQNAgent:
                 if done:
                     break
             
+            if episode % 100 == 0:
+                avg_reward = int(np.mean(env.return_queue))
+                print("Episode:", episode, "Average Reward:", avg_reward)
+            
+            reward_over_episodes.append(env.return_queue[-1])
+            
             self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        rewards_to_plot = [[reward[0] for reward in reward_over_episodes]] 
+        df1 = pd.DataFrame(rewards_to_plot).melt()
+        df1.rename(columns={"variable": "episodes", "value": "reward"}, inplace=True)
+        sns.set_theme(style="darkgrid", context="talk", palette="rainbow")
+        sns.lineplot(x="episodes", y="reward", data = df1).set(
+            title="DQN for CartPole-v1"
+        )
+        plt.show()
+        
+       
 

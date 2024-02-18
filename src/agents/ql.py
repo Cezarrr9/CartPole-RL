@@ -143,5 +143,3 @@ class QLAgent:
         axs[2].plot(range(len(training_error_moving_average)), training_error_moving_average)
         plt.tight_layout()
         plt.show()
-
-        

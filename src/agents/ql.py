@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import gymnasium as gym
 import math
-from tqdm import tqdm 
+from tqdm import tqdm
+import random
 
 # Define the environment variable name
 env_var_name = 'CARTPOLE_RL_PATH'
@@ -45,16 +46,16 @@ def bucketize(obs, obs_bounds):
 class QLAgent:
 
     def __init__(self,
-                 action_space,
+                 n_actions: int,
                  learning_rate: float, 
                  discount_factor: float, 
                  epsilon_start: float,
                  epsilon_end: float, 
                  epsilon_decay: float) -> None:
         
-        self.action_space = action_space
+        self.n_actions = n_actions
 
-        self.q_values = defaultdict(lambda: np.zeros(action_space.n))
+        self.q_values = defaultdict(lambda: np.zeros(n_actions))
 
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
@@ -68,7 +69,7 @@ class QLAgent:
     def select_action(self, obs: tuple[float, float, float, float]) -> int:
 
         if np.random.random() < self.epsilon:
-            return self.action_space.sample()
+            return random.randint(0, self.n_actions - 1)
         
         else:
             return int(np.argmax(self.q_values[obs]))
@@ -90,21 +91,76 @@ class QLAgent:
     def decay_epsilon(self) -> None:
         self.epsilon = max(self.epsilon_end, self.epsilon - self.epsilon_decay)
 
+    def train(self, env, num_episodes):
+        env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = num_episodes)
+        obs_bounds = list(zip(env.observation_space.low, env.observation_space.high))
+        obs_bounds[1] = (-0.5, 0.5)
+        obs_bounds[3] = (-math.radians(50), math.radians(50))
+
+        for i in tqdm(range(num_episodes)):
+            obs, info = env.reset()
+            done = False
+            obs = bucketize(obs, obs_bounds)
+            # play one episode
+            while not done:
+                
+                action = self.select_action(obs)
+                next_obs, reward, terminated, truncated, info = env.step(action)
+
+                # update the agent
+                next_obs = bucketize(next_obs, obs_bounds)
+                self.update(obs, action, reward, terminated, next_obs)
+
+                # update if the environment is done and the current obs
+                done = terminated or truncated
+                obs = next_obs
+
+            self.decay_epsilon()
+        
+        rolling_length = 500
+        fig, axs = plt.subplots(ncols=3, figsize=(12, 5))
+        axs[0].set_title("Episode rewards")
+        # compute and assign a rolling average of the data to provide a smoother graph
+        reward_moving_average = (
+            np.convolve(
+                np.array(env.return_queue).flatten(), np.ones(rolling_length), mode="valid"
+            )
+            / rolling_length
+        )
+        axs[0].plot(range(len(reward_moving_average)), reward_moving_average)
+        axs[1].set_title("Episode lengths")
+        length_moving_average = (
+            np.convolve(
+                np.array(env.length_queue).flatten(), np.ones(rolling_length), mode="same"
+            )
+            / rolling_length
+        )
+        axs[1].plot(range(len(length_moving_average)), length_moving_average)
+        axs[2].set_title("Training Error")
+        training_error_moving_average = (
+            np.convolve(np.array(agent.training_error), np.ones(rolling_length), mode="same")
+            / rolling_length
+        )
+        axs[2].plot(range(len(training_error_moving_average)), training_error_moving_average)
+        plt.tight_layout()
+        plt.show()
+
 if __name__ == "__main__":
 
     # Declare the environment
     env = gym.make('CartPole-v1')
     
     # Set the hyper-parameters
-    num_episodes = 1000
+    num_episodes = 10000
     learning_rate = 0.3
     discount_factor = 0.99
     epsilon_start = 1.0
     epsilon_decay = epsilon_start / (num_episodes / 2)  # reduce the exploration over time
     epsilon_end = 0.1
+    n_actions = env.action_space.n
 
     agent = QLAgent(
-        action_space = env.action_space,
+        n_actions=n_actions,
         learning_rate = learning_rate,
         discount_factor = discount_factor,
         epsilon_start = epsilon_start,
@@ -112,55 +168,5 @@ if __name__ == "__main__":
         epsilon_end = epsilon_end,
     )
 
-    env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = num_episodes)
-    obs_bounds = list(zip(env.observation_space.low, env.observation_space.high))
-    obs_bounds[1] = (-0.5, 0.5)
-    obs_bounds[3] = (-math.radians(50), math.radians(50))
-
-    for i in tqdm(range(num_episodes)):
-        obs, info = env.reset()
-        done = False
-        obs = bucketize(obs, obs_bounds)
-        # play one episode
-        while not done:
-            
-            action = agent.select_action(obs)
-            next_obs, reward, terminated, truncated, info = env.step(action)
-
-            # update the agent
-            next_obs = bucketize(next_obs, obs_bounds)
-            agent.update(obs, action, reward, terminated, next_obs)
-
-            # update if the environment is done and the current obs
-            done = terminated or truncated
-            obs = next_obs
-
-        agent.decay_epsilon()
+    agent.train(env=env, num_episodes=num_episodes)
     
-    rolling_length = 500
-    fig, axs = plt.subplots(ncols=3, figsize=(12, 5))
-    axs[0].set_title("Episode rewards")
-    # compute and assign a rolling average of the data to provide a smoother graph
-    reward_moving_average = (
-        np.convolve(
-            np.array(env.return_queue).flatten(), np.ones(rolling_length), mode="valid"
-        )
-        / rolling_length
-    )
-    axs[0].plot(range(len(reward_moving_average)), reward_moving_average)
-    axs[1].set_title("Episode lengths")
-    length_moving_average = (
-        np.convolve(
-            np.array(env.length_queue).flatten(), np.ones(rolling_length), mode="same"
-        )
-        / rolling_length
-    )
-    axs[1].plot(range(len(length_moving_average)), length_moving_average)
-    axs[2].set_title("Training Error")
-    training_error_moving_average = (
-        np.convolve(np.array(agent.training_error), np.ones(rolling_length), mode="same")
-        / rolling_length
-    )
-    axs[2].plot(range(len(training_error_moving_average)), training_error_moving_average)
-    plt.tight_layout()
-    plt.show()

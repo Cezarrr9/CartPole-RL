@@ -12,8 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
 class ReplayBuffer(object):
 
@@ -21,7 +20,6 @@ class ReplayBuffer(object):
         self.memory = deque([], maxlen=capacity)
 
     def push(self, *args):
-        """Save a transition"""
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size):
@@ -69,7 +67,8 @@ class DQNAgent:
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         self.criterion = nn.SmoothL1Loss()
-        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.learning_rate, amsgrad=True)
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), 
+                                     lr = self.learning_rate, amsgrad=True)
         self.buffer = ReplayBuffer(10000)
 
         self.steps_done = 0
@@ -82,8 +81,7 @@ class DQNAgent:
         self.steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
-                prediction = self.policy_net(state)
-                return prediction.max(1).indices.view(1, 1)
+                return self.policy_net(state).max(1).indices.view(1, 1)
         else:
             return torch.tensor([[random.randint(0, 1)]], dtype=torch.long)
 
@@ -114,6 +112,43 @@ class DQNAgent:
         loss.backward()
         self.optimizer.step()
 
+    def train(self, env, num_episodes):
+        episode_durations = []
+        for i_episode in tqdm(range(num_episodes)):
+
+            state, info = env.reset()
+            state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+
+            for t in count():
+                action = self.select_action(state)
+                observation, reward, terminated, truncated, _ = env.step(action.item())
+                reward = torch.tensor([reward])
+                done = terminated or truncated
+
+                if terminated:
+                    next_state = None
+                else:
+                    next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
+
+                agent.buffer.push(state, action, next_state, reward)
+
+                state = next_state
+
+                self.update()
+
+                target_net_state_dict = self.target_net.state_dict()
+                policy_net_state_dict = self.policy_net.state_dict()
+                for key in policy_net_state_dict:
+                    target_net_state_dict[key] = policy_net_state_dict[key] * TAU + \
+                                            target_net_state_dict[key]*(1-TAU)
+                self.target_net.load_state_dict(target_net_state_dict)
+
+                if done:
+                    episode_durations.append(t + 1)
+                    break
+                    
+        return episode_durations
+
 if __name__ == "__main__":
 
     env = gym.make("CartPole-v1")
@@ -143,40 +178,11 @@ if __name__ == "__main__":
         learning_rate=LR
     )
 
-    episode_durations = []
-    for i_episode in tqdm(range(num_episodes)):
-
-        state, info = env.reset()
-        state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
-
-        for t in count():
-            action = agent.select_action(state)
-            observation, reward, terminated, truncated, _ = env.step(action.item())
-            reward = torch.tensor([reward])
-            done = terminated or truncated
-
-            if terminated:
-                next_state = None
-            else:
-                next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
-
-            agent.buffer.push(state, action, next_state, reward)
-
-            state = next_state
-
-            agent.update()
-
-            target_net_state_dict = agent.target_net.state_dict()
-            policy_net_state_dict = agent.policy_net.state_dict()
-            for key in policy_net_state_dict:
-                target_net_state_dict[key] = policy_net_state_dict[key] * TAU + \
-                                        target_net_state_dict[key]*(1-TAU)
-            agent.target_net.load_state_dict(target_net_state_dict)
-
-            if done:
-                episode_durations.append(t + 1)
-                break
+    episode_durations = agent.train(env=env, num_episodes=num_episodes)
     
     x = np.arange(num_episodes)
     plt.plot(x, episode_durations)
+    plt.title('DQN Performance Over Time')
+    plt.xlabel('Episode')
+    plt.ylabel('Reward')
     plt.show()

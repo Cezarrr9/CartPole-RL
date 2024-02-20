@@ -275,7 +275,7 @@ import torch.nn.functional as F
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
-class ReplayMemory(object):
+class ReplayBuffer(object):
 
     def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
@@ -304,7 +304,7 @@ class DQN(nn.Module):
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
         return self.layer3(x)
-
+steps_done = 0
 class DQNAgent:
 
     def __init__(self,
@@ -333,12 +333,19 @@ class DQNAgent:
         self.target_net = DQN(n_obs, n_actions)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
+        self.criterion = nn.SmoothL1Loss()
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.learning_rate, amsgrad=True)
-        self.memory = ReplayMemory(10000)
+        self.buffer = ReplayBuffer(10000)
 
     def set_target_net(self, target_net_state_dict):
         self.target_net.load_state_dict(target_net_state_dict)
-
+    
+    def get_policy_net(self):
+        return self.policy_net
+    
+    def get_target_net(self):
+        return self.target_net
+    
     def get_target_state_dict(self):
         return self.target_net.state_dict()
     
@@ -346,25 +353,26 @@ class DQNAgent:
         return self.policy_net.state_dict()
 
     def push_to_memory(self, state, action, next_state, reward):
-        self.memory.push(state, action, next_state, reward)
+        self.buffer.push(state, action, next_state, reward)
 
-    def select_action(self, state, steps_done):
+    def select_action(self, state):
+        global steps_done
         sample = random.random()
         eps_threshold = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * \
             math.exp(-1. * steps_done / self.epsilon_decay)
+        
+        steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
-                # t.max(1) will return the largest column value of each row.
-                # second column on max result is index of where max element was
-                # found, so we pick action with the larger expected reward.
-                return self.policy_net(state).max(1).indices.view(1, 1)
+                prediction = self.policy_net(state)
+                return prediction.max(1).indices.view(1, 1)
         else:
             return torch.tensor([[random.randint(0, 1)]], dtype=torch.long)
 
     def optimize_model(self):
-        if len(self.memory) < self.batch_size:
+        if len(self.buffer) < self.batch_size:
             return
-        transitions = self.memory.sample(self.batch_size)
+        transitions = self.buffer.sample(self.batch_size)
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
         # detailed explanation). This converts batch-array of Transitions
         # to Transition of batch-arrays.
@@ -372,8 +380,7 @@ class DQNAgent:
 
         # Compute a mask of non-final states and concatenate the batch elements
         # (a final state would've been the one after which simulation ended)
-        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                            batch.next_state)), dtype=torch.bool)
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype=torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
@@ -396,15 +403,11 @@ class DQNAgent:
         expected_state_action_values = (next_state_values * self.discount_factor) + reward_batch
 
         # Compute Huber loss
-        criterion = nn.SmoothL1Loss()
-        loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
+        loss = self.criterion(state_action_values, expected_state_action_values.unsqueeze(1))
 
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
-
-        # In-place gradient clipping
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
 
 if __name__ == "__main__":
@@ -422,8 +425,6 @@ if __name__ == "__main__":
     n_observations = len(state)
     n_actions = env.action_space.n
 
-    episode_durations = []
-
     num_episodes = 300
 
     agent = DQNAgent(
@@ -438,12 +439,13 @@ if __name__ == "__main__":
         learning_rate=LR
     )
 
+    episode_durations = []
     for i_episode in tqdm(range(num_episodes)):
-        # Initialize the environment and get its state
+    # Initialize the environment and get its state
         state, info = env.reset()
         state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
         for t in count():
-            action = agent.select_action(state, t + 1)
+            action = agent.select_action(state)
             observation, reward, terminated, truncated, _ = env.step(action.item())
             reward = torch.tensor([reward])
             done = terminated or truncated
@@ -454,7 +456,7 @@ if __name__ == "__main__":
                 next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
 
             # Store the transition in memory
-            agent.push_to_memory(state, action, next_state, reward)
+            agent.buffer.push(state, action, next_state, reward)
 
             # Move to the next state
             state = next_state
@@ -464,29 +466,18 @@ if __name__ == "__main__":
 
             # Soft update of the target network's weights
             # θ′ ← τ θ + (1 −τ )θ′
-            target_net_state_dict = agent.get_target_state_dict()
-            policy_net_state_dict = agent.get_policy_state_dict()
+            # print(f"target net state dict{agent.target_net.state_dict()}")
+            target_net_state_dict = agent.target_net.state_dict()
+            # print(f"target net state dict{agent.target_net.state_dict()}")
+            policy_net_state_dict = agent.policy_net.state_dict()
             for key in policy_net_state_dict:
                 target_net_state_dict[key] = policy_net_state_dict[key]*TAU + target_net_state_dict[key]*(1-TAU)
-            agent.set_target_net(target_net_state_dict)
+            agent.target_net.load_state_dict(target_net_state_dict)
 
             if done:
                 episode_durations.append(t + 1)
                 break
-
+    
     x = np.arange(num_episodes)
     plt.plot(x, episode_durations)
     plt.show()
-
-    ######################################################################
-    # Here is the diagram that illustrates the overall resulting data flow.
-    #
-    # .. figure:: /_static/img/reinforcement_learning_diagram.jpg
-    #
-    # Actions are chosen either randomly or based on a policy, getting the next
-    # step sample from the gym environment. We record the results in the
-    # replay memory and also run optimization step on every iteration.
-    # Optimization picks a random batch from the replay memory to do training of the
-    # new policy. The "older" target_net is also used in optimization to compute the
-    # expected Q values. A soft update of its weights are performed at every step.
-    #

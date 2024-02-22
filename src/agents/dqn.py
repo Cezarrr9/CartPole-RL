@@ -1,3 +1,6 @@
+import os
+import sys
+
 import numpy as np
 import gymnasium as gym
 import math
@@ -11,6 +14,21 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+
+# Define the environment variable name
+env_var_name = 'CARTPOLE_RL_PATH'
+
+# Get the path from the environment variable
+module_path = os.getenv(env_var_name)
+
+# Check if the environment variable was set
+if module_path:
+    sys.path.append(module_path)
+else:
+    print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
+    sys.exit(1)
+
+from src.utils.plot import plot_rolling_average
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
 
@@ -188,10 +206,4 @@ if __name__ == "__main__":
     )
 
     episode_durations = agent.train(env=env, num_episodes=num_episodes)
-    
-    x = np.arange(num_episodes)
-    plt.plot(x, episode_durations)
-    plt.title('DQN Performance Over Time')
-    plt.xlabel('Episode')
-    plt.ylabel('Reward')
-    plt.show()
+    plot_rolling_average(algorithm="DQN", episode_durations=episode_durations, rolling_length=100)

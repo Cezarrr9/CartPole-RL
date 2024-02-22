@@ -6,6 +6,7 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from itertools import count
 import gymnasium as gym
 from tqdm import tqdm
 
@@ -21,6 +22,8 @@ if module_path:
 else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
+
+from src.utils.plot import plot_rolling_average
 
 def bucketize(obs: np.ndarray, obs_bounds: list) -> tuple:
     n_buckets = (1, 1, 6, 3)
@@ -91,53 +94,36 @@ class QLAgent:
     def decay_epsilon(self) -> None:
         self.epsilon = max(self.epsilon_end, self.epsilon - self.epsilon_decay)
 
-    def train(self, env: gym.wrappers, num_episodes: int) -> None:
-        env = gym.wrappers.RecordEpisodeStatistics(env, deque_size = num_episodes)
+    def train(self, env: gym.wrappers, num_episodes: int) -> list:
+        episode_durations = []
         obs_bounds = list(zip(env.observation_space.low, env.observation_space.high))
         obs_bounds[1] = (-0.5, 0.5)
         obs_bounds[3] = (-math.radians(50), math.radians(50))
 
         for i in tqdm(range(num_episodes)):
             obs, _ = env.reset()
-            done = False
             state = bucketize(obs, obs_bounds)
             # play one episode
-            while not done:
+            for t in count():
                 
+                # Select action
                 action = self.select_action(state)
                 next_obs, reward, terminated, truncated, _ = env.step(action)
+                done = terminated or truncated
 
                 # update the agent
                 next_state = bucketize(next_obs, obs_bounds)
                 self.update(state, action, reward, terminated, next_state)
 
-                # update if the environment is done and the current obs
-                done = terminated or truncated
                 state = next_state
 
+                if done:
+                    episode_durations.append(t + 1)
+                    break
+
             self.decay_epsilon()
-        
-        rolling_length = 500
-        fig, axs = plt.subplots(ncols=2, figsize=(12, 5))
-        axs[0].set_title("Episode rewards")
-        # compute and assign a rolling average of the data to provide a smoother graph
-        reward_moving_average = (
-            np.convolve(
-                np.array(env.return_queue).flatten(), np.ones(rolling_length), mode="valid"
-            )
-            / rolling_length
-        )
-        axs[0].plot(range(len(reward_moving_average)), reward_moving_average)
-        axs[1].set_title("Episode lengths")
-        length_moving_average = (
-            np.convolve(
-                np.array(env.length_queue).flatten(), np.ones(rolling_length), mode="same"
-            )
-            / rolling_length
-        )
-        axs[1].plot(range(len(length_moving_average)), length_moving_average)
-        plt.tight_layout()
-        plt.show()
+
+        return episode_durations
 
 if __name__ == "__main__":
 
@@ -162,5 +148,5 @@ if __name__ == "__main__":
         epsilon_end = epsilon_end,
     )
 
-    agent.train(env=env, num_episodes=num_episodes)
-    
+    episode_durations = agent.train(env=env, num_episodes=num_episodes)
+    plot_rolling_average(algorithm="QL", episode_durations=episode_durations, rolling_length=500)

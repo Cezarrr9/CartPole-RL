@@ -12,34 +12,34 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
+Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
 
 class ReplayBuffer(object):
 
-    def __init__(self, capacity):
+    def __init__(self, capacity: int) -> None:
         self.memory = deque([], maxlen=capacity)
 
-    def push(self, *args):
+    def push(self, *args) -> None:
         self.memory.append(Transition(*args))
 
-    def sample(self, batch_size):
+    def sample(self, batch_size: int) -> list:
         return random.sample(self.memory, batch_size)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.memory)
 
 class DQN(nn.Module):
 
-    def __init__(self, n_observations, n_actions):
+    def __init__(self, n_observations: int, n_actions: int):
         super(DQN, self).__init__()
         self.layer1 = nn.Linear(n_observations, 128)
         self.layer2 = nn.Linear(128, 128)
         self.layer3 = nn.Linear(128, n_actions)
 
-    def forward(self, x):
-        x = F.relu(self.layer1(x))
-        x = F.relu(self.layer2(x))
-        return self.layer3(x)
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        state = F.relu(self.layer1(state))
+        state = F.relu(self.layer2(state))
+        return self.layer3(state)
 
 class DQNAgent:
 
@@ -53,17 +53,20 @@ class DQNAgent:
                  epsilon_decay: int, 
                  learning_rate: float):
         
+        self.n_actions = n_actions
+        self.n_obs = n_obs
         self.batch_size = batch_size
 
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
 
+        self.epsilon = epsilon_start
         self.epsilon_start = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay = epsilon_decay
 
-        self.policy_net = DQN(n_obs, n_actions)
-        self.target_net = DQN(n_obs, n_actions)
+        self.policy_net = DQN(self.n_obs, self.n_actions)
+        self.target_net = DQN(self.n_obs, self.n_actions)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         self.criterion = nn.SmoothL1Loss()
@@ -73,19 +76,22 @@ class DQNAgent:
 
         self.steps_done = 0
 
-    def select_action(self, state):
-        sample = random.random()
-        eps_threshold = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * \
+    def decay_epsilon(self) -> None:
+        self.epsilon = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * \
             math.exp(-1. * self.steps_done / self.epsilon_decay)
-        
         self.steps_done += 1
-        if sample > eps_threshold:
+
+    def select_action(self, state: torch.Tensor) -> torch.Tensor:
+
+        sample = random.random()
+        if sample > self.epsilon:
             with torch.no_grad():
                 return self.policy_net(state).max(1).indices.view(1, 1)
+            
         else:
-            return torch.tensor([[random.randint(0, 1)]], dtype=torch.long)
+            return torch.tensor([[random.randint(0, self.n_actions - 1)]], dtype=torch.long)
 
-    def update(self):
+    def update(self) -> None:
 
         if len(self.buffer) < self.batch_size:
             return
@@ -112,15 +118,18 @@ class DQNAgent:
         loss.backward()
         self.optimizer.step()
 
-    def train(self, env, num_episodes):
+    def train(self, env: gym.wrappers, num_episodes: int) -> list:
         episode_durations = []
         for i_episode in tqdm(range(num_episodes)):
 
-            state, info = env.reset()
+            state, _ = env.reset()
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
-
+                
             for t in count():
+
+                self.decay_epsilon()
                 action = self.select_action(state)
+                
                 observation, reward, terminated, truncated, _ = env.step(action.item())
                 reward = torch.tensor([reward])
                 done = terminated or truncated
@@ -130,7 +139,7 @@ class DQNAgent:
                 else:
                     next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
 
-                agent.buffer.push(state, action, next_state, reward)
+                agent.buffer.push(state, action, reward, next_state)
 
                 state = next_state
 

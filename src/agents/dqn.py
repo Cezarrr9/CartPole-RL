@@ -192,7 +192,7 @@ if __name__ == "__main__":
     n_observations = len(state)
     n_actions = env.action_space.n
 
-    num_episodes = 300
+    num_episodes = 400
 
     agent = DQNAgent(
         n_actions=n_actions,
@@ -206,4 +206,4 @@ if __name__ == "__main__":
     )
 
     episode_durations = agent.train(env=env, num_episodes=num_episodes)
-    plot_rolling_average(algorithm="DQN", episode_durations=episode_durations, rolling_length=100)
+    plot_rolling_average(algorithm="DQN", episode_durations=episode_durations, rolling_length=15)

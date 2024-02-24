@@ -4,7 +4,6 @@ import sys
 import math
 import random
 import numpy as np
-import matplotlib.pyplot as plt
 from collections import defaultdict
 from itertools import count
 import gymnasium as gym
@@ -23,7 +22,7 @@ else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
 
-from src.utils.plot import plot_rolling_average
+from src.utils.plot import plot_reward
 
 def bucketize(obs: np.ndarray, obs_bounds: list) -> tuple:
     n_buckets = (1, 1, 6, 3)
@@ -50,24 +49,20 @@ class QLAgent:
 
     def __init__(self,
                  n_actions: int,
-                 learning_rate: float, 
-                 discount_factor: float, 
-                 epsilon_start: float,
-                 epsilon_end: float, 
-                 epsilon_decay: float) -> None:
+                 min_learning_rate: float,
+                 discount_factor: float,
+                 min_epsilon: float) -> None:
         
         self.n_actions = n_actions
 
         self.q_values = defaultdict(lambda: np.zeros(n_actions))
 
-        self.learning_rate = learning_rate
+        self.learning_rate = float
+        self.min_learning_rate = min_learning_rate
         self.discount_factor = discount_factor
         
-        self.epsilon = epsilon_start
-        self.epsilon_end = epsilon_end
-        self.epsilon_decay = epsilon_decay
-
-        self.training_error = []
+        self.epsilon = float
+        self.min_epsilon = min_epsilon
 
     def select_action(self, obs: tuple[float, float, float, float]) -> int:
 
@@ -89,10 +84,11 @@ class QLAgent:
 
         self.q_values[state][action] += self.learning_rate * temporal_difference
 
-        self.training_error.append(temporal_difference)
-
-    def decay_epsilon(self) -> None:
-        self.epsilon = max(self.epsilon_end, self.epsilon - self.epsilon_decay)
+    def decay_epsilon(self, step: int) -> None:
+        self.epsilon =  max(self.min_epsilon, min(1.0, 1.0 - math.log10((step + 1) / 25)))
+    
+    def decay_learning_rate(self, step: int) -> None:
+        self.learning_rate =  max(self.min_learning_rate, min(1.0, 1.0 - math.log10((step + 1) / 25)))
 
     def train(self, env: gym.wrappers, num_episodes: int) -> list:
         episode_durations = []
@@ -100,9 +96,13 @@ class QLAgent:
         obs_bounds[1] = (-0.5, 0.5)
         obs_bounds[3] = (-math.radians(50), math.radians(50))
 
-        for i in tqdm(range(num_episodes)):
+        for i_episode in tqdm(range(num_episodes)):
             obs, _ = env.reset()
             state = bucketize(obs, obs_bounds)
+
+            self.decay_epsilon(i_episode)
+            self.decay_learning_rate(i_episode)
+
             # play one episode
             for t in count():
                 
@@ -121,8 +121,6 @@ class QLAgent:
                     episode_durations.append(t + 1)
                     break
 
-            self.decay_epsilon()
-
         return episode_durations
 
 if __name__ == "__main__":
@@ -131,22 +129,19 @@ if __name__ == "__main__":
     env = gym.make('CartPole-v1')
     
     # Set the hyper-parameters
-    num_episodes = 10000
-    learning_rate = 0.3
+    num_episodes = 300
+    min_learning_rate = 0.01
     discount_factor = 0.99
-    epsilon_start = 1.0
-    epsilon_decay = epsilon_start / (num_episodes / 2)  # reduce the exploration over time
-    epsilon_end = 0.1
+    min_epsilon = 0.01
     n_actions = env.action_space.n
 
     agent = QLAgent(
         n_actions=n_actions,
-        learning_rate = learning_rate,
+        min_learning_rate = min_learning_rate,
         discount_factor = discount_factor,
-        epsilon_start = epsilon_start,
-        epsilon_decay = epsilon_decay,
-        epsilon_end = epsilon_end,
+        min_epsilon = min_epsilon
     )
 
     episode_durations = agent.train(env=env, num_episodes=num_episodes)
-    plot_rolling_average(algorithm="QL", episode_durations=episode_durations, rolling_length=500)
+    plot_reward(algorithm="QL", episode_durations=episode_durations, num_episodes=num_episodes)
+    env.close()

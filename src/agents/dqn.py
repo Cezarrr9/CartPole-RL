@@ -1,11 +1,9 @@
 import os
 import sys
 
-import numpy as np
 import gymnasium as gym
 import math
 import random
-import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 from itertools import count
 from tqdm import tqdm
@@ -28,7 +26,7 @@ else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
 
-from src.utils.plot import plot_rolling_average
+from src.utils.plot import plot_reward
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
 
@@ -68,7 +66,8 @@ class DQNAgent:
                  discount_factor: float, 
                  epsilon_start: float,
                  epsilon_end: float, 
-                 epsilon_decay: int, 
+                 epsilon_decay: int,
+                 update_rate: float, 
                  learning_rate: float):
         
         self.n_actions = n_actions
@@ -77,6 +76,7 @@ class DQNAgent:
 
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
+        self.update_rate = update_rate
 
         self.epsilon = epsilon_start
         self.epsilon_start = epsilon_start
@@ -166,8 +166,8 @@ class DQNAgent:
                 target_net_state_dict = self.target_net.state_dict()
                 policy_net_state_dict = self.policy_net.state_dict()
                 for key in policy_net_state_dict:
-                    target_net_state_dict[key] = policy_net_state_dict[key] * TAU + \
-                                            target_net_state_dict[key]*(1-TAU)
+                    target_net_state_dict[key] = policy_net_state_dict[key] * self.update_rate + \
+                                            target_net_state_dict[key] * (1 - self.update_rate)
                 self.target_net.load_state_dict(target_net_state_dict)
 
                 if done:
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     n_observations = len(state)
     n_actions = env.action_space.n
 
-    num_episodes = 400
+    num_episodes = 600
 
     agent = DQNAgent(
         n_actions=n_actions,
@@ -202,8 +202,10 @@ if __name__ == "__main__":
         epsilon_start=EPS_START,
         epsilon_decay=EPS_DECAY,
         epsilon_end=EPS_END,
+        update_rate=TAU,
         learning_rate=LR
     )
 
     episode_durations = agent.train(env=env, num_episodes=num_episodes)
-    plot_rolling_average(algorithm="DQN", episode_durations=episode_durations, rolling_length=15)
+    plot_reward(algorithm="DQN", episode_durations=episode_durations, num_episodes=num_episodes)
+    env.close()

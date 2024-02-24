@@ -1,15 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_rolling_average(algorithm: str, episode_durations: list, rolling_length: int):
-    reward_moving_average = (
-        np.convolve(
-            np.array(episode_durations), np.ones(rolling_length), mode="valid"
-        )
-        / rolling_length
-    )
-    plt.plot(range(len(reward_moving_average)), reward_moving_average)
+def plot_reward(algorithm: str, episode_durations: list, num_episodes: int):
+    plt.plot(range(num_episodes), episode_durations)
     plt.title(f"{algorithm} Performance Over Time")
     plt.xlabel('Episode')
     plt.ylabel('Reward')
-    plt.show()
+    plt.savefig(f"data/{algorithm}.png")

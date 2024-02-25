@@ -79,22 +79,30 @@ def bucketize(obs: np.ndarray, obs_bounds: list) -> tuple:
     return bucket_indices
 
 class QLAgent:
-    """Q-learning Agent"""
+    """Q-learning Agent
+    
+    Attributes:
+    - n_actions (int): the number of actions available for the agent
+    - q_values (defaultdict[np.ndarray]): the current state action values 
+    - learning_rate (float): the value of the current learning rate
+    - min_learning_rate (float): the minimum value that the learning rate can take 
+    - discount_factor (float): the discount factor used in the q-learning algorithm 
+    - epsilon (float): the value of the current epsilon threshold
+    - min_epsilon (float): the minimum value that the epsilon threshold can take 
+    
+    Methods:
+    - select_action(state): Selects an action using the epsilon greedy policy.
+    - update(state, action, reward, terminated, next_state): Updates the state action values.
+    - decay_epsilon(): Decreases the value of the epsilon threshold over time.
+    - decay_learning_rate(): Decreases the value of the learning rate over time.
+    - train(env, num_episodes): Train the agent using the Q-learning algorithm.
+    """
 
     def __init__(self,
                  n_actions: int,
                  min_learning_rate: float,
                  discount_factor: float,
                  min_epsilon: float) -> None:
-        
-        """Initializes an instance of the class.
-        
-        Parameters:
-        - n_action (int): the number of actions available for the agent
-        - min_learning_rate (float): the minimum value that the learning rate can take 
-        - discount_factor (float): the discount factor used in the q-learning algorithm 
-        - min_epsilon (float): the minimum value that the epsilon threshold can take 
-        """
         
         self.n_actions = n_actions
 

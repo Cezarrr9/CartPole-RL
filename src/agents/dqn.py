@@ -26,22 +26,61 @@ else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
 
+# Import the plotting function
 from src.utils.plot import plot_reward
 
+# Declare a namedtuple to store transitions 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
 
 class ReplayBuffer(object):
+    """A buffer that keeps track of the most recent transitions.
+    
+    Attributes:
+    - memory (collections.queue): The internal memory where the transitions are stored.
+
+    Methods:
+    - push (*args): Adds a transition in the memory.
+    - sample(batch_size): Randomly sample a batch of transitions from the buffer.
+    - len(): Get how many transitions are stored in the memory.
+    
+    """
 
     def __init__(self, capacity: int) -> None:
+        """Initializes the ReplayBuffer with a fixed capacity.
+        
+        Parameters:
+        - capacity (int): The maxium size of the buffer. 
+        
+        """
         self.memory = deque([], maxlen=capacity)
 
     def push(self, *args) -> None:
+        """Adds a transition in the memory.
+
+        Parameters:
+        - *args: Components of the transition to be stored (state,
+        action, reward and next state)
+        
+        """
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size: int) -> list:
+        """Randomly sample a batch of transitions from the buffer.
+        
+        Parameters:
+        - batch_size (int): The number of transitions to sample.
+
+        Returns:
+        - List of randomly sampled transitions
+        """
         return random.sample(self.memory, batch_size)
 
     def __len__(self) -> int:
+        """Gets the current size of the internal memory.
+        
+        Returns:
+        - (int): The number of transitions stored in the buffer.
+        """
         return len(self.memory)
 
 class DQN(nn.Module):

@@ -204,7 +204,7 @@ class QLAgent:
             # Play one episode
             for t in count():
                 
-                # Select action
+                # Select an action using the epsilon-greedy policy
                 action = self.select_action(state)
 
                 # Execute the selected action

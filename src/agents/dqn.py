@@ -38,6 +38,9 @@ class ReplayBuffer(object):
     Attributes:
     - memory (collections.queue): The internal memory where the transitions are stored.
 
+    Parameters:
+    - capacity (int): The maxium size of the buffer.
+
     Methods:
     - push (*args): Adds a transition in the memory.
     - sample(batch_size): Randomly sample a batch of transitions from the buffer.
@@ -82,16 +85,49 @@ class ReplayBuffer(object):
         - (int): The number of transitions stored in the buffer.
         """
         return len(self.memory)
-
+    
 class DQN(nn.Module):
+    """Implements a Deep Q-Network model.
+    
+    Attributes:
+    - layer1: The first linear layer of the network, mapping from
+    input observations to the second layer.
+    - layer2: The second linear layer of the network, mapping from
+    the outputs of the first layer to the third layer.
+    - layer3: The third linear layer of the network, mapping from 
+    the outputs of the seond layer to the action values.
+
+    Parameters:
+    - n_observations (int): The number of observation dimensions in the input state.
+    - n_actions (int): The number of possible actions the agent can take.
+
+    Methods:
+    - forward(state):  Defines the forward pass of the DQN model.
+    """
 
     def __init__(self, n_observations: int, n_actions: int):
+        """
+        Initializes the DQN model with three linear layers.
+
+        Parameters:
+        - n_observations (int): The number of observation dimensions in the input state.
+        - n_actions (int): The number of possible actions the agent can take.
+        """
         super(DQN, self).__init__()
         self.layer1 = nn.Linear(n_observations, 128)
         self.layer2 = nn.Linear(128, 128)
         self.layer3 = nn.Linear(128, n_actions)
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
+        """
+        Defines the forward pass of the DQN model.
+
+        Parameters:
+        - state (torch.Tensor): The input state tensor for which action values are to be predicted.
+
+        Returns:
+        - torch.Tensor: The predicted action values for the input state.
+        """
         state = F.relu(self.layer1(state))
         state = F.relu(self.layer2(state))
         return self.layer3(state)

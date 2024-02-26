@@ -23,7 +23,7 @@ else:
     sys.exit(1)
 
 # Import the plotting function
-from src.utils.plot import plot_reward
+from src.utils.plot import plot_episode_durations
 
 def bucketize(obs: np.ndarray, obs_bounds: list) -> tuple:
     """ Discretizes the continuous state values into a fixed
@@ -251,8 +251,8 @@ if __name__ == "__main__":
     # Train the agent
     episode_durations = agent.train(env=env, num_episodes=num_episodes)
 
-    # Plot its performance
-    plot_reward(algorithm="QL", episode_durations=episode_durations, num_episodes=num_episodes)
+    # Plot the episode durations
+    plot_episode_durations(algorithm="QL", episode_durations=episode_durations, num_episodes=num_episodes)
 
     # Close the environment
     env.close()

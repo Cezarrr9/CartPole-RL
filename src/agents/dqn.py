@@ -27,7 +27,7 @@ else:
     sys.exit(1)
 
 # Import the plotting function
-from src.utils.plot import plot_reward
+from src.utils.plot import plot_episode_durations
 
 # Declare a namedtuple to store transitions 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
@@ -385,7 +385,7 @@ if __name__ == "__main__":
     episode_durations = agent.train(env=env, num_episodes=num_episodes)
 
     # Plot the episode durations
-    plot_reward(algorithm="DQN", episode_durations=episode_durations, num_episodes=num_episodes)
+    plot_episode_durations(algorithm="DQN", episode_durations=episode_durations, num_episodes=num_episodes)
 
     # Close the environment
     env.close()

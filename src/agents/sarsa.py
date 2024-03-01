@@ -24,6 +24,8 @@ else:
 
 # Import the plotting function
 from src.utils.plot import plot_episode_durations
+
+# Import a function for discretizing the state space
 from src.utils.bucketize import bucketize
 
 class SarsaAgent:

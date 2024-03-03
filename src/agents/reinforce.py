@@ -115,6 +115,7 @@ if __name__ == "__main__":
     # Declare the environment
     env = gym.make("CartPole-v1")
 
+    # Setting the hyperparameters
     learning_rate = 0.01
     discount_factor = 0.99
 

@@ -54,13 +54,13 @@ class ReinforceAgent:
         self.discount_factor = discount_factor
 
         self.policy_net = PolicyNetwork(n_observations, n_actions)
-        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr = self.learning_rate,
-                                      amsgrad = True)
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr = self.learning_rate)
         
         self.probs = []
         self.rewards = []
 
     def select_action(self, state):
+        state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
         probs = self.policy_net(state)
         c = Categorical(probs)
         action = c.sample()
@@ -93,11 +93,10 @@ class ReinforceAgent:
         episode_durations = []
         for i_episode in tqdm(range(num_episodes)):
             state, _ = env.reset()
-            state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
 
             for t in count():
                 action = self.select_action(state)
-                obs, reward, terminated, truncated, info = env.step(action)
+                state, reward, terminated, truncated, info = env.step(action)
                 self.rewards.append(reward)
 
                 done = terminated or truncated 

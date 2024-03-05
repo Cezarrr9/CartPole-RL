@@ -28,22 +28,25 @@ else:
 from src.utils.plot import plot_episode_durations
 
 class PolicyNetwork(nn.Module):
-    """Parameterized policy network."""
+    """ Parameterized policy network.
+    
+    Methods:
+        forward(state): Defines the forward pass through the network.
+    """
 
     def __init__(self, n_observations: int, n_actions: int) -> None:
-        """Initializes a two-layer neural network. 
-        
+        """
         Args:
             n_observations (int): The size of the observation space.
             n_actions (int): The size of the action space.
         """
+
         super().__init__()
         self.layer1 = nn.Linear(n_observations, 128)
         self.layer2 = nn.Linear(128, n_actions)
 
     def forward(self, state: torch.Tensor):
-        """
-        Forward pass through the network.
+        """ Defines the forward pass through the network.
 
         Args:
             state: The current state of the environment.
@@ -51,13 +54,13 @@ class PolicyNetwork(nn.Module):
         Returns:
             The probability distribution over actions.
         """
+
         state = F.relu(self.layer1(state))
         state = self.layer2(state)
         return F.softmax(state, dim = 1)
 
 class ReinforceAgent:
-    """
-    An agent that uses the REINFORCE algorithm for training a policy network.
+    """ An agent that uses the REINFORCE algorithm for training a policy network.
 
     Attributes:
         learning_rate (float): The learning rate for the optimizer.
@@ -66,6 +69,11 @@ class ReinforceAgent:
         optimizer (torch.optim.Optimizer): The optimizer for updating the network weights.
         probs (list): A list to store the log probabilities of the actions taken.
         rewards (list): A list to store the rewards obtained.
+
+    Methods:
+        select_action(state): Selects an action based on the policy network's output.
+        update(): Updates the policy network based on the collected rewards and log probabilities.
+        train(env, num_episodes): Train the agent in the environment for a specified number of episodes.
     """
 
     def __init__(self,
@@ -74,8 +82,6 @@ class ReinforceAgent:
                  learning_rate: float, 
                  discount_factor: float) -> None:
         """
-        Initializes REINFORCE agent.
-
         Args:
             n_observations (int): The size of the observation space.
             n_actions (int): The size of the action space.
@@ -93,8 +99,7 @@ class ReinforceAgent:
         self.rewards = []
 
     def select_action(self, state: tuple[float, float, float, float]):
-        """
-        Selects an action based on the policy network's output.
+        """ Selects an action based on the policy network's output.
 
         Args:
             state (tuple): The current state of the environment.
@@ -120,9 +125,8 @@ class ReinforceAgent:
         return action.item()
 
     def update(self):
-        """
-        Updates the policy network based on the collected rewards and log probabilities.
-        """
+        """ Updates the policy network based on the collected rewards and log probabilities."""
+
         g = 0
         returns = []
 
@@ -147,8 +151,7 @@ class ReinforceAgent:
         self.rewards = []
 
     def train(self, env: gym.wrappers, num_episodes: int):
-        """
-        Train the agent in the environment for a specified number of episodes.
+        """ Train the agent in the environment for a specified number of episodes.
 
         Args:
             env (gym.wrappers): The environment to train in.

@@ -36,63 +36,56 @@ class ReplayBuffer(object):
     """A buffer that keeps track of the most recent transitions.
     
     Attributes:
-    - memory (collections.queue): The internal memory where the transitions are stored.
+        memory (collections.queue): The internal memory where the transitions are stored.
 
     Methods:
-    - push (*args): Adds a transition in the memory.
-    - sample(batch_size): Randomly sample a batch of transitions from the buffer.
-    - len(): Get how many transitions are stored in the memory.
+        push (*args): Adds a transition in the memory.
+        sample(batch_size): Randomly sample a batch of transitions from the buffer.
+        len(): Get how many transitions are stored in the memory.
     
     """
 
     def __init__(self, capacity: int) -> None:
-        """Initializes the ReplayBuffer with a fixed capacity.
-        
-        Parameters:
-        - capacity (int): The maxium size of the buffer. 
-        
         """
+        Args:
+            capacity (int): The maxium size of the buffer. 
+        """
+
         self.memory = deque([], maxlen=capacity)
 
     def push(self, *args) -> None:
         """Adds a transition in the memory.
 
-        Parameters:
-        - *args: Components of the transition to be stored (state,
+        Args:
+            *args: Components of the transition to be stored (state,
         action, reward and next state)
-        
         """
+
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size: int) -> list:
         """Randomly sample a batch of transitions from the buffer.
         
-        Parameters:
-        - batch_size (int): The number of transitions to sample.
+        Args:
+            batch_size (int): The number of transitions to sample.
 
         Returns:
-        - List of randomly sampled transitions
+            (list): List of randomly sampled transitions
         """
+
         return random.sample(self.memory, batch_size)
 
     def __len__(self) -> int:
         """Gets the current size of the internal memory.
         
         Returns:
-        - (int): The number of transitions stored in the buffer.
+            (int): The number of transitions stored in the buffer.
         """
+
         return len(self.memory)
     
 class DQN(nn.Module):
     """Implements a Deep Q-Network model.
-    
-    Attributes:
-    - layer1: The first linear layer of the network, mapping from
-    input observations to the second layer.
-    - layer2: The second linear layer of the network, mapping from
-    the outputs of the first layer to the third layer.
-    - layer3: The third linear layer of the network, mapping from 
-    the outputs of the seond layer to the action values.
 
     Methods:
     - forward(state):  Defines the forward pass of the DQN model.
@@ -100,12 +93,11 @@ class DQN(nn.Module):
 
     def __init__(self, n_observations: int, n_actions: int):
         """
-        Initializes the DQN model with three linear layers.
-
-        Parameters:
-        - n_observations (int): The number of dimensions of the observation space.
-        - n_actions (int): The number of possible actions the agent can take.
+        Args:
+            n_observations (int): The number of dimensions of the observation space.
+            n_actions (int): The number of possible actions the agent can take.
         """
+
         super(DQN, self).__init__()
         self.layer1 = nn.Linear(n_observations, 128)
         self.layer2 = nn.Linear(128, 128)
@@ -115,12 +107,13 @@ class DQN(nn.Module):
         """
         Defines the forward pass of the DQN model.
 
-        Parameters:
-        - state (torch.Tensor): The input state tensor for which action values are to be predicted.
+        Args:
+            state (torch.Tensor): The input state tensor for which action values are to be predicted.
 
         Returns:
-        - torch.Tensor: The predicted action values for the input state.
+            torch.Tensor: The predicted action values for the input state.
         """
+        
         state = F.relu(self.layer1(state))
         state = F.relu(self.layer2(state))
         return self.layer3(state)
@@ -129,29 +122,29 @@ class DQNAgent:
     """ Implements a an agent that learns using a DQN.
     
     Attributes:
-    - n_actions (int): Number of possible actions in the environment.
-    - n_obs (int): Number of observations from the environment.
-    - batch_size (int): Size of batches to sample from the replay buffer.
-    - discount_factor (float): Discount factor for future rewards.
-    - learning_rate (float): Learning rate for the optimizer.
-    - update_rate (float): Rate at which the target network is updated.
-    - epsilon (float): Epsilon value for epsilon-greedy action selection.
-    - epsilon_start (float): Starting value of epsilon.
-    - epsilon_end (float): Minimum value of epsilon.
-    - epsilon_decay (int): Rate of decay for epsilon.
-    - policy_net (DQN): The current policy network.
-    - target_net (DQN): The target network for stable Q-value estimation.
-    - criterion (nn.Module): Loss function.
-    - optimizer (torch.optim.Optimizer): Optimizer for learning the policy network's parameters.
-    - buffer (ReplayBuffer): Replay buffer for storing experiences.
-    - steps_done (int): Counter for the number of steps taken (for epsilon decay).
+        n_actions (int): Number of possible actions in the environment.
+        n_obs (int): Number of observations from the environment.
+        batch_size (int): Size of batches to sample from the replay buffer.
+        discount_factor (float): Discount factor for future rewards.
+        learning_rate (float): Learning rate for the optimizer.
+        update_rate (float): Rate at which the target network is updated.
+        epsilon (float): Epsilon value for epsilon-greedy action selection.
+        epsilon_start (float): Starting value of epsilon.
+        epsilon_end (float): Minimum value of epsilon.
+        epsilon_decay (int): Rate of decay for epsilon.
+        policy_net (DQN): The current policy network.
+        target_net (DQN): The target network for stable Q-value estimation.
+        criterion (nn.Module): Loss function.
+        optimizer (torch.optim.Optimizer): Optimizer for learning the policy network's parameters.
+        buffer (ReplayBuffer): Replay buffer for storing experiences.
+        steps_done (int): Counter for the number of steps taken (for epsilon decay).
 
     Methods:
-    - decay_epsilon():  Decays the epsilon value used for epsilon-greedy action selection,
+        decay_epsilon():  Decays the epsilon value used for epsilon-greedy action selection,
     based on the number of steps taken.
-    - select_action(state): Selects an action using epsilon-greedy policy based on the current state.
-    - update(): Updates the policy network based on a batch of experiences sampled from the replay buffer.
-    - train(env, num_episodes): Trains the agent on the given environment for a specified number of episodes.
+        select_action(state): Selects an action using epsilon-greedy policy based on the current state.
+        update(): Updates the policy network based on a batch of experiences sampled from the replay buffer.
+        train(env, num_episodes): Trains the agent on the given environment for a specified number of episodes.
     """
 
     def __init__(self,
@@ -166,20 +159,17 @@ class DQNAgent:
                  learning_rate: float):
         
         """
-        Initializes the DQNAgent with the given parameters and 
-        initializes the policy and target networks.
-
-        Parameters:
-        - n_actions (int): Number of possible actions in the environment.
-        - n_obs (int): Number of observations from the environment.
-        - batch_size (int): Size of batches to sample from the replay buffer.
-        - discount_factor (float): Discount factor for future rewards.
-        - epsilon_start (float): Starting value of epsilon for epsilon-greedy action selection.
-        - epsilon_end (float): Minimum value of epsilon after decay.
-        - epsilon_decay (int): Rate of decay for epsilon, affecting how quickly it decreases.
-        - update_rate (float): Rate at which the target network's weights are updated towards 
+        Args:
+            n_actions (int): Number of possible actions in the environment.
+            n_obs (int): Number of observations from the environment.
+            batch_size (int): Size of batches to sample from the replay buffer.
+            discount_factor (float): Discount factor for future rewards.
+            epsilon_start (float): Starting value of epsilon for epsilon-greedy action selection.
+            epsilon_end (float): Minimum value of epsilon after decay.
+            epsilon_decay (int): Rate of decay for epsilon, affecting how quickly it decreases.
+            update_rate (float): Rate at which the target network's weights are updated towards 
         the policy network's weights.
-        - learning_rate (float): Learning rate for the optimizer.
+            learning_rate (float): Learning rate for the optimizer.
         """
         
         self.n_actions = n_actions
@@ -219,11 +209,11 @@ class DQNAgent:
         """
         Selects an action using epsilon-greedy policy based on the current state.
 
-        Parameters:
-        - state (torch.Tensor): The current state of the environment.
+        Args:
+            state (torch.Tensor): The current state of the environment.
 
         Returns:
-        - torch.Tensor: The action to be taken.
+            torch.Tensor: The action to be taken.
         """
 
         # If the random selected number is bigger than epsilon, then select
@@ -290,12 +280,12 @@ class DQNAgent:
         """
         Trains the agent on the given environment for a specified number of episodes.
 
-        Parameters:
-        - env (gym.wrappers): The environment to train the agent on.
-        - num_episodes (int): The number of episodes to train the agent for.
+        Args:
+            env (gym.wrappers): The environment to train the agent on.
+            num_episodes (int): The number of episodes to train the agent for.
 
         Returns:
-        - list: A list containing the duration of each episode.
+            (list): A list containing the duration of each episode.
         """
 
         episode_durations = []

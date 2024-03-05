@@ -32,20 +32,20 @@ class SarsaAgent:
     """SARSA Agent
     
     Attributes:
-    - n_actions (int): The number of actions available for the agent.
-    - q_values (defaultdict[np.ndarray]): The current state action values.
-    - learning_rate (float): The value of the current learning rate.
-    - min_learning_rate (float): The minimum value that the learning rate can take.
-    - discount_factor (float): The discount factor used in the SARSA algorithm. 
-    - epsilon (float): The value of the current epsilon threshold.
-    - min_epsilon (float): The minimum value that the epsilon threshold can take.
+        n_actions (int): The number of actions available for the agent.
+        q_values (defaultdict[np.ndarray]): The current state action values.
+        learning_rate (float): The value of the current learning rate.
+        min_learning_rate (float): The minimum value that the learning rate can take.
+        discount_factor (float): The discount factor used in the SARSA algorithm. 
+        epsilon (float): The value of the current epsilon threshold.
+        min_epsilon (float): The minimum value that the epsilon threshold can take.
     
     Methods:
-    - select_action(state): Selects an action using the epsilon greedy policy.
-    - update(state, action, reward, terminated, next_state): Updates the state action values.
-    - decay_epsilon(): Decreases the value of the epsilon threshold over time.
-    - decay_learning_rate(): Decreases the value of the learning rate over time.
-    - train(env, num_episodes): Train the agent using the SARSA algorithm.
+        select_action(state): Selects an action using the epsilon greedy policy.
+        update(state, action, reward, terminated, next_state): Updates the state action values.
+        decay_epsilon(): Decreases the value of the epsilon threshold over time.
+        decay_learning_rate(): Decreases the value of the learning rate over time.
+        train(env, num_episodes): Train the agent using the SARSA algorithm.
     """
 
     def __init__(self,
@@ -68,11 +68,11 @@ class SarsaAgent:
     def select_action(self, state: tuple[float, float, float, float]) -> int:
         """Selects an action using the epsilon greedy policy.
         
-        Parameters:
-        - state (tuple[float]): The discretized version of the state.
+        Args:
+            state (tuple[float]): The discretized version of the state.
 
         Returns:
-        - (int): The index of an action.
+            (int): The index of an action.
         """
 
         # If the random selected number is bigger than epsilon, then select
@@ -93,13 +93,13 @@ class SarsaAgent:
 
         """ Updates the state action values.
 
-        Parameters:
-        - state (tuple[float]): The discretized version of the current state.
-        - action (int): The index of the selected action.
-        - reward (int): The reward obtained after performing the action in the current state.
-        - terminated (bool): A flag that indicates if the episode was terminated.
-        - next_state (tuple[float]): The discretized version of the next state.
-        - next_action (int): The index of the next selected action.
+        Args:
+            state (tuple[float]): The discretized version of the current state.
+            action (int): The index of the selected action.
+            reward (int): The reward obtained after performing the action in the current state.
+            terminated (bool): A flag that indicates if the episode was terminated.
+            next_state (tuple[float]): The discretized version of the next state.
+            next_action (int): The index of the next selected action.
         
         """
 
@@ -112,28 +112,28 @@ class SarsaAgent:
     def decay_epsilon(self, step: int) -> None:
         """Decreases the value of the epsilon threshold over time.
         
-        Parameters:
-        - step (int): The number of steps passed until the current moment.
+        Args:
+            step (int): The number of steps passed until the current moment.
         """
         self.epsilon =  max(self.min_epsilon, min(1.0, 1.0 - math.log10((step + 1) / 25)))
     
     def decay_learning_rate(self, step: int) -> None:
         """Decreases the value of the learning rate over time.
         
-        Parameters:
-        - step (int): The number of steps passed until the current moment.
+        Args:
+            step (int): The number of steps passed until the current moment.
         """
         self.learning_rate =  max(self.min_learning_rate, min(1.0, 1.0 - math.log10((step + 1) / 25)))
 
     def train(self, env: gym.wrappers, num_episodes: int) -> list:
         """Train the agent using the Q-learning algorithm.
         
-        Paraemeters:
-        - env (gym.wrappers): The environment where the agent is trained. 
-        - num_episodes (int): The number of episodes for which the agent is trained.
+        Args:
+            env (gym.wrappers): The environment where the agent is trained. 
+            num_episodes (int): The number of episodes for which the agent is trained.
 
         Returns:
-        - episode_durations (list[int]): The number of timesteps each episode lasted (the same as
+            episode_durations (list[int]): The number of timesteps each episode lasted (the same as
         the reward in the CartPole-v1 environment).
         
         """

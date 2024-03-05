@@ -98,7 +98,6 @@ class QLAgent:
             reward (int): The reward obtained after performing the action in the current state.
             terminated (bool): A flag that indicates if the episode was terminated.
             next_state (tuple[float]): The discretized version of the next state.
-        
         """
 
         # Applying the Q-learning algorithm
@@ -113,6 +112,7 @@ class QLAgent:
         Args:
             step (int): The number of steps passed until the current moment.
         """
+
         self.epsilon =  max(self.min_epsilon, min(1.0, 1.0 - math.log10((step + 1) / 25)))
     
     def decay_learning_rate(self, step: int) -> None:
@@ -121,6 +121,7 @@ class QLAgent:
         Args:
             step (int): The number of steps passed until the current moment.
         """
+
         self.learning_rate =  max(self.min_learning_rate, min(1.0, 1.0 - math.log10((step + 1) / 25)))
 
     def train(self, env: gym.wrappers, num_episodes: int) -> list:
@@ -133,8 +134,8 @@ class QLAgent:
         Returns:
             episode_durations (list[int]): The number of timesteps each episode lasted (the same as
         the reward in the CartPole-v1 environment).
-        
         """
+        
         episode_durations = []
         obs_bounds = list(zip(env.observation_space.low, env.observation_space.high))
         obs_bounds[1] = (-0.5, 0.5)

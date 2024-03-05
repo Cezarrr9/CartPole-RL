@@ -46,12 +46,11 @@ class ReplayBuffer(object):
     """
 
     def __init__(self, capacity: int) -> None:
-        """Initializes the ReplayBuffer with a fixed capacity.
-        
+        """        
         Args:
             capacity (int): The maxium size of the buffer. 
-        
         """
+
         self.memory = deque([], maxlen=capacity)
 
     def push(self, *args) -> None:
@@ -60,8 +59,8 @@ class ReplayBuffer(object):
         Args:
             *args: Components of the transition to be stored (state,
         action, reward and next state)
-        
         """
+
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size: int) -> list:
@@ -73,6 +72,7 @@ class ReplayBuffer(object):
         Returns:
             (list): List of randomly sampled transitions
         """
+
         return random.sample(self.memory, batch_size)
 
     def __len__(self) -> int:
@@ -81,6 +81,7 @@ class ReplayBuffer(object):
         Returns:
             (int): The number of transitions stored in the buffer.
         """
+
         return len(self.memory)
     
 class DQN(nn.Module):
@@ -98,6 +99,7 @@ class DQN(nn.Module):
             n_observations (int): The number of dimensions of the observation space.
             n_actions (int): The number of possible actions the agent can take.
         """
+
         super(DQN, self).__init__()
         self.layer1 = nn.Linear(n_observations, 128)
         self.layer2 = nn.Linear(128, 128)
@@ -113,6 +115,7 @@ class DQN(nn.Module):
         Returns:
             (torch.Tensor): The predicted action values for the input state.
         """
+
         state = F.relu(self.layer1(state))
         state = F.relu(self.layer2(state))
         return self.layer3(state)
@@ -203,6 +206,7 @@ class DQNAgent:
         Decays the epsilon value used for epsilon-greedy action selection,
         based on the number of steps taken.
         """
+        
         self.epsilon = self.epsilon_end + (self.epsilon_start - self.epsilon_end) * \
             math.exp(-1. * self.steps_done / self.epsilon_decay)
         self.steps_done += 1

@@ -1,6 +1,9 @@
 import os
 import sys
 
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import gymnasium as gym
 from itertools import count
 from tqdm import tqdm
@@ -25,7 +28,7 @@ else:
     sys.exit(1)
 
 # Import the plotting function
-from src.utils.plot import plot_episode_durations
+from src.utils.plot import plot_multiple_episodes
 
 class PolicyNetwork(nn.Module):
     """ Parameterized policy network.
@@ -80,7 +83,8 @@ class ReinforceAgent:
                  n_observations: int, 
                  n_actions: int,
                  learning_rate: float, 
-                 discount_factor: float) -> None:
+                 discount_factor: float,
+                 seed: int) -> None:
         """
         Args:
             n_observations (int): The size of the observation space.
@@ -88,6 +92,7 @@ class ReinforceAgent:
             learning_rate (float): The learning rate for the optimizer.
             discount_factor (float): The discount factor for future rewards.
         """
+        self.seed = seed
 
         self.learning_rate = learning_rate
         self.discount_factor = discount_factor
@@ -166,7 +171,7 @@ class ReinforceAgent:
         for i_episode in tqdm(range(num_episodes)):
 
             # Reset the environment (start new episode) and get the starting state
-            state, _ = env.reset()
+            state, _ = env.reset(seed=self.seed)
 
             for t in count():
 
@@ -195,29 +200,39 @@ if __name__ == "__main__":
 
     # Setting the hyperparameters
     learning_rate = 0.01
-    discount_factor = 0.99
+    discount_factor = 0.95
 
     # Reset the environment to get the number of 
     # dimensions of the observation space and the number 
     # of available actions
-    state, info = env.reset()
-    n_observations = len(state)
+    n_observations = env.observation_space.shape[0]
     n_actions = env.action_space.n
 
     # Set the hyperparameters
-    num_episodes = 600
+    num_episodes = 10000
 
-    # Declare the Reinforce agent
-    agent = ReinforceAgent(learning_rate=learning_rate,
-                           discount_factor=discount_factor,
-                           n_actions=n_actions,
-                           n_observations=n_observations)
+    episode_durations_over_seeds = []
 
-    # Train the agent
-    episode_durations = agent.train(env=env, num_episodes=num_episodes)
+    for seed in [1]: # Fibonacci seeds
 
-    # Plot the episode durations
-    plot_episode_durations(algorithm="REINFORCE", episode_durations=episode_durations, num_episodes=num_episodes)
+        # Set the seed
+        torch.manual_seed(seed)
+
+        # Declare the Reinforce agent
+        agent = ReinforceAgent(learning_rate=learning_rate,
+                            discount_factor=discount_factor,
+                            n_actions=n_actions,
+                            n_observations=n_observations,
+                            seed = seed)
+
+        # Train the agent
+        episode_durations = agent.train(env=env, num_episodes=num_episodes)
+
+        episode_durations_over_seeds.append(episode_durations)
+
+    plot_multiple_episodes(algorithm="REINFORCE", episode_durations_over_seeds=episode_durations_over_seeds)
+    # # Plot the episode durations
+    # plot_episode_durations(algorithm="REINFORCE", episode_durations=episode_durations, num_episodes=num_episodes)
 
     # Close the environment
     env.close()

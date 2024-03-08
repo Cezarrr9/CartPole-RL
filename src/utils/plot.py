@@ -1,7 +1,8 @@
-import numpy as np
+import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 
-def plot_episode_durations(algorithm: str, episode_durations: list, num_episodes: int):
+def plot_single_episode(algorithm: str, episode_durations: list, num_episodes: int) -> None:
     """
     Plots the episode durations over time.
 
@@ -15,3 +16,12 @@ def plot_episode_durations(algorithm: str, episode_durations: list, num_episodes
     plt.xlabel('Episode')
     plt.ylabel('Reward')
     plt.savefig(f"data/{algorithm}.png")
+
+def plot_multiple_episodes(algorithm: str, episode_durations_over_seeds: list) -> None:
+    df1 = pd.DataFrame(episode_durations_over_seeds).melt()
+    df1.rename(columns={"variable": "episodes", "value": "reward"}, inplace=True)
+    sns.set_theme(style="darkgrid", context="talk", palette="rainbow")
+    sns.lineplot(x="episodes", y="reward", data=df1).set(
+        title=f"{algorithm} Performance Over Time"
+    )
+    plt.savefig(f"data/{algorithm}_over_seeds.png")

@@ -1,9 +1,6 @@
 import os
 import sys
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import gymnasium as gym
 from itertools import count
 from tqdm import tqdm
@@ -28,7 +25,7 @@ else:
     sys.exit(1)
 
 # Import the plotting function
-from src.utils.plot import plot_multiple_episodes
+from src.utils.plot import plot_single_episode, plot_multiple_episodes
 
 class PolicyNetwork(nn.Module):
     """ Parameterized policy network.
@@ -48,7 +45,7 @@ class PolicyNetwork(nn.Module):
         self.layer1 = nn.Linear(n_observations, 32)
         self.layer2 = nn.Linear(32, n_actions)
 
-    def forward(self, state: torch.Tensor):
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
         """ Defines the forward pass through the network.
 
         Args:
@@ -103,7 +100,7 @@ class ReinforceAgent:
         self.probs = [] 
         self.rewards = []
 
-    def select_action(self, state: tuple[float, float, float, float]):
+    def select_action(self, state: tuple[float, float, float, float]) -> int:
         """ Selects an action based on the policy network's output.
 
         Args:
@@ -129,7 +126,7 @@ class ReinforceAgent:
 
         return action.item()
 
-    def update(self):
+    def update(self) -> None:
         """ Updates the policy network based on the collected rewards and log probabilities."""
 
         g = 0
@@ -155,7 +152,7 @@ class ReinforceAgent:
         self.probs = []
         self.rewards = []
 
-    def train(self, env: gym.wrappers, num_episodes: int):
+    def train(self, env: gym.wrappers, num_episodes: int) -> list:
         """ Train the agent in the environment for a specified number of episodes.
 
         Args:
@@ -231,6 +228,10 @@ if __name__ == "__main__":
 
         # Record the performance of the algorithm
         episode_durations_over_seeds.append(episode_durations)
+
+    # Plot the performance recorded over the last seed
+    seed_episode_durations = episode_durations_over_seeds[-1]
+    plot_single_episode(algorithm="REINFORCE", episode_durations=seed_episode_durations, num_episodes=num_episodes)
 
     # Plot the performance of the algorithm over the seeds
     plot_multiple_episodes(algorithm="REINFORCE", episode_durations_over_seeds=episode_durations_over_seeds)

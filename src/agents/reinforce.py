@@ -45,8 +45,8 @@ class PolicyNetwork(nn.Module):
         """
 
         super().__init__()
-        self.layer1 = nn.Linear(n_observations, 128)
-        self.layer2 = nn.Linear(128, n_actions)
+        self.layer1 = nn.Linear(n_observations, 32)
+        self.layer2 = nn.Linear(32, n_actions)
 
     def forward(self, state: torch.Tensor):
         """ Defines the forward pass through the network.
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
     # Setting the hyperparameters
     learning_rate = 0.01
-    discount_factor = 0.95
+    discount_factor = 0.99
 
     # Reset the environment to get the number of 
     # dimensions of the observation space and the number 
@@ -209,11 +209,12 @@ if __name__ == "__main__":
     n_actions = env.action_space.n
 
     # Set the hyperparameters
-    num_episodes = 10000
+    num_episodes = 180
 
+    # Declare a list to store the performance of the algorithm over seeds
     episode_durations_over_seeds = []
 
-    for seed in [1]: # Fibonacci seeds
+    for seed in [1, 2, 3, 5, 8]: # Fibonacci seeds
 
         # Set the seed
         torch.manual_seed(seed)
@@ -228,11 +229,11 @@ if __name__ == "__main__":
         # Train the agent
         episode_durations = agent.train(env=env, num_episodes=num_episodes)
 
+        # Record the performance of the algorithm
         episode_durations_over_seeds.append(episode_durations)
 
+    # Plot the performance of the algorithm over the seeds
     plot_multiple_episodes(algorithm="REINFORCE", episode_durations_over_seeds=episode_durations_over_seeds)
-    # # Plot the episode durations
-    # plot_episode_durations(algorithm="REINFORCE", episode_durations=episode_durations, num_episodes=num_episodes)
 
     # Close the environment
     env.close()

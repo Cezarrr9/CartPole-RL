@@ -86,6 +86,7 @@ class ReinforceAgent:
             n_actions (int): The size of the action space.
             learning_rate (float): The learning rate for the optimizer.
             discount_factor (float): The discount factor for future rewards.
+            seed (int): The seed used for resetting the environment. 
         """
         self.seed = seed
 
@@ -109,7 +110,7 @@ class ReinforceAgent:
         """
         
         # Convert the state into a tensor to facilitate training
-        state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+        state = torch.tensor(state, dtype = torch.float32).unsqueeze(0)
 
         # Get the probability distribution
         probs = self.policy_net(state)
@@ -166,7 +167,7 @@ class ReinforceAgent:
         for i_episode in tqdm(range(num_episodes)):
 
             # Reset the environment (start new episode) and get the starting state
-            state, _ = env.reset(seed=self.seed)
+            state, _ = env.reset(seed = self.seed)
 
             for t in count():
 
@@ -215,24 +216,24 @@ if __name__ == "__main__":
         torch.manual_seed(seed)
 
         # Declare the Reinforce agent
-        agent = ReinforceAgent(learning_rate=learning_rate,
-                            discount_factor=discount_factor,
-                            n_actions=n_actions,
-                            n_observations=n_observations,
+        agent = ReinforceAgent(learning_rate = learning_rate,
+                            discount_factor = discount_factor,
+                            n_actions = n_actions,
+                            n_observations = n_observations,
                             seed = seed)
 
         # Train the agent
-        episode_durations = agent.train(env=env, num_episodes=num_episodes)
+        episode_durations = agent.train(env = env, num_episodes = num_episodes)
 
         # Record the performance of the algorithm
         episode_durations_over_seeds.append(episode_durations)
 
     # Plot the performance recorded over the last seed
     seed_episode_durations = episode_durations_over_seeds[0]
-    plot_single_episode(algorithm="REINFORCE", episode_durations=seed_episode_durations, num_episodes=num_episodes)
+    plot_single_episode(algorithm = "REINFORCE", episode_durations=seed_episode_durations, num_episodes = num_episodes)
 
     # Plot the performance of the algorithm over the seeds
-    plot_multiple_episodes(algorithm="REINFORCE", episode_durations_over_seeds=episode_durations_over_seeds)
+    plot_multiple_episodes(algorithm = "REINFORCE", episode_durations_over_seeds = episode_durations_over_seeds)
 
     # Close the environment
     env.close()

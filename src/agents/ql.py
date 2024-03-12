@@ -23,7 +23,7 @@ else:
     sys.exit(1)
 
 # Import the plotting function
-from src.utils.plot import plot_episode_durations
+from src.utils.plot import plot_single_episode, plot_multiple_episodes
 
 # Import a function for discretizing the state space
 from src.utils.bucketize import bucketize
@@ -39,6 +39,7 @@ class QLAgent:
         discount_factor (float): The discount factor used in the q-learning algorithm. 
         epsilon (float): The value of the current epsilon threshold.
         min_epsilon (float): The minimum value that the epsilon threshold can take.
+        seed (int): The seed used for resetting the environment.
     
     Methods:
         select_action(state): Selects an action using the epsilon greedy policy.
@@ -52,7 +53,8 @@ class QLAgent:
                  n_actions: int,
                  min_learning_rate: float,
                  discount_factor: float,
-                 min_epsilon: float) -> None:
+                 min_epsilon: float,
+                 seed: int) -> None:
         
         self.n_actions = n_actions
 
@@ -64,6 +66,8 @@ class QLAgent:
         
         self.epsilon = float
         self.min_epsilon = min_epsilon
+
+        self.seed = seed
 
     def select_action(self, state: tuple[float, float, float, float]) -> int:
         """Selects an action using the epsilon greedy policy.
@@ -143,7 +147,7 @@ class QLAgent:
 
         for i_episode in tqdm(range(num_episodes)):
             # Get the observation from the environment
-            obs, _ = env.reset()
+            obs, _ = env.reset(seed = self.seed)
 
             # Discretize the continuous values corresponding to the current state
             state = bucketize(obs, obs_bounds)
@@ -185,25 +189,40 @@ if __name__ == "__main__":
     env = gym.make('CartPole-v1')
     
     # Set the hyper-parameters
-    num_episodes = 300
+    num_episodes = 350
     min_learning_rate = 0.01
     discount_factor = 0.99
-    min_epsilon = 0.01
+    min_epsilon = 0.005
     n_actions = env.action_space.n
 
-    # Declare the Q-learning agent
-    agent = QLAgent(
-        n_actions=n_actions,
-        min_learning_rate = min_learning_rate,
-        discount_factor = discount_factor,
-        min_epsilon = min_epsilon
-    )
+    # Declare a list to store the performance of the algorithm over seeds
+    episode_durations_over_seeds = []
 
-    # Train the agent
-    episode_durations = agent.train(env=env, num_episodes=num_episodes)
+    for seed in [1, 2, 3, 5, 8]: # Fibonacci seeds
 
-    # Plot the episode durations
-    plot_episode_durations(algorithm="QL", episode_durations=episode_durations, num_episodes=num_episodes)
+        # Set the seed
+        random.seed(seed)
+        np.random.seed(seed)
+
+        # Declare the QL agent
+        agent = QLAgent(n_actions = n_actions,
+                        min_learning_rate = min_learning_rate,
+                        discount_factor = discount_factor,
+                        min_epsilon = min_epsilon,
+                        seed = seed)
+
+        # Train the agent
+        episode_durations = agent.train(env = env, num_episodes = num_episodes)
+
+        # Record the performance of the algorithm
+        episode_durations_over_seeds.append(episode_durations)
+
+    # Plot the performance recorded over the last seed
+    seed_episode_durations = episode_durations_over_seeds[0]
+    plot_single_episode(algorithm = "QL", episode_durations = seed_episode_durations, num_episodes = num_episodes)
+
+    # Plot the performance of the algorithm over the seeds
+    plot_multiple_episodes(algorithm = "QL", episode_durations_over_seeds = episode_durations_over_seeds)
 
     # Close the environment
     env.close()

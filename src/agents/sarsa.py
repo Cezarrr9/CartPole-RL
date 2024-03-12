@@ -220,17 +220,17 @@ if __name__ == "__main__":
                            seed = seed)
 
         # Train the agent
-        episode_durations = agent.train(env=env, num_episodes=num_episodes)
+        episode_durations = agent.train(env = env, num_episodes = num_episodes)
 
         # Record the performance of the algorithm
         episode_durations_over_seeds.append(episode_durations)
 
     # Plot the performance recorded over the last seed
     seed_episode_durations = episode_durations_over_seeds[0]
-    plot_single_episode(algorithm="SARSA", episode_durations=seed_episode_durations, num_episodes=num_episodes)
+    plot_single_episode(algorithm = "SARSA", episode_durations = seed_episode_durations, num_episodes = num_episodes)
 
     # Plot the performance of the algorithm over the seeds
-    plot_multiple_episodes(algorithm="SARSA", episode_durations_over_seeds=episode_durations_over_seeds)
+    plot_multiple_episodes(algorithm = "SARSA", episode_durations_over_seeds = episode_durations_over_seeds)
 
     # Close the environment
     env.close()

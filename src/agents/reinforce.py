@@ -198,9 +198,8 @@ if __name__ == "__main__":
     learning_rate = 0.01
     discount_factor = 0.99
 
-    # Reset the environment to get the number of 
-    # dimensions of the observation space and the number 
-    # of available actions
+    # Get the number of dimensions of the observation space 
+    # and the number of available actions
     n_observations = env.observation_space.shape[0]
     n_actions = env.action_space.n
 

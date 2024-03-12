@@ -203,7 +203,7 @@ if __name__ == "__main__":
     min_epsilon = 0.01
     n_actions = env.action_space.n
 
-   # Declare a list to store the performance of the algorithm over seeds
+    # Declare a list to store the performance of the algorithm over seeds
     episode_durations_over_seeds = []
 
     for seed in [1, 2, 3, 5, 8]: # Fibonacci seeds

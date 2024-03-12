@@ -42,8 +42,7 @@ class PolicyNetwork(nn.Module):
         """
 
         super().__init__()
-        self.layer1 = nn.Linear(n_observations, 32)
-        self.layer2 = nn.Linear(32, n_actions)
+        self.layer = nn.Linear(n_observations, n_actions)
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """ Defines the forward pass through the network.
@@ -55,8 +54,7 @@ class PolicyNetwork(nn.Module):
             The probability distribution over actions.
         """
 
-        state = F.relu(self.layer1(state))
-        state = self.layer2(state)
+        state = self.layer(state)
         return F.softmax(state, dim = 1)
 
 class ReinforceAgent:
@@ -206,7 +204,7 @@ if __name__ == "__main__":
     n_actions = env.action_space.n
 
     # Set the hyperparameters
-    num_episodes = 180
+    num_episodes = 1000
 
     # Declare a list to store the performance of the algorithm over seeds
     episode_durations_over_seeds = []
@@ -230,7 +228,7 @@ if __name__ == "__main__":
         episode_durations_over_seeds.append(episode_durations)
 
     # Plot the performance recorded over the last seed
-    seed_episode_durations = episode_durations_over_seeds[-1]
+    seed_episode_durations = episode_durations_over_seeds[0]
     plot_single_episode(algorithm="REINFORCE", episode_durations=seed_episode_durations, num_episodes=num_episodes)
 
     # Plot the performance of the algorithm over the seeds

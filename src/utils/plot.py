@@ -46,12 +46,13 @@ def plot_multiple_episodes(algorithm: str, episode_durations_over_seeds: list) -
         episode_durations_over_seeds (str): A list of lists where each sublist represents
                                       the episode durations for a specific seed.
     """
-
+    
     df1 = pd.DataFrame(episode_durations_over_seeds).melt()
     df1.rename(columns={"variable": "episodes", "value": "reward"}, inplace=True)
     sns.set_theme(style="darkgrid", context="talk", palette="rainbow")
     sns.lineplot(x="episodes", y="reward", data=df1).set(
         title=f"{algorithm} Performance Over Time"
     )
+    plt.tight_layout()
     plt.savefig(f"data/{algorithm}_over_seeds.png")
     plt.close()

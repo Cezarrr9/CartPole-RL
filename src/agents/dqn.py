@@ -26,14 +26,14 @@ else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
 
-# Import the plotting function
-from src.utils.plot import plot_episode_durations
+# Import the plotting functions
+from src.utils.plot import plot_single_episode, plot_multiple_episodes
 
 # Declare a namedtuple to store transitions 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
 
 class ReplayBuffer(object):
-    """A buffer that keeps track of the most recent transitions.
+    """ A buffer that keeps track of the most recent transitions.
     
     Attributes:
         memory (collections.queue): The internal memory where the transitions are stored.
@@ -54,7 +54,7 @@ class ReplayBuffer(object):
         self.memory = deque([], maxlen=capacity)
 
     def push(self, *args) -> None:
-        """Adds a transition in the memory.
+        """ Adds a transition in the memory.
 
         Args:
             *args: Components of the transition to be stored (state,
@@ -64,7 +64,7 @@ class ReplayBuffer(object):
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size: int) -> list:
-        """Randomly sample a batch of transitions from the buffer.
+        """ Randomly sample a batch of transitions from the buffer.
         
         Args:
             batch_size (int): The number of transitions to sample.
@@ -76,7 +76,7 @@ class ReplayBuffer(object):
         return random.sample(self.memory, batch_size)
 
     def __len__(self) -> int:
-        """Gets the current size of the internal memory.
+        """ Gets the current size of the internal memory.
         
         Returns:
             (int): The number of transitions stored in the buffer.
@@ -85,15 +85,14 @@ class ReplayBuffer(object):
         return len(self.memory)
     
 class DQN(nn.Module):
-    """Implements a Deep Q-Network model.
+    """ Implements a Deep Q-Network model.
     
     Methods:
         forward(state):  Defines the forward pass of the DQN model.
     """
 
     def __init__(self, n_observations: int, n_actions: int):
-        """
-        Initializes the DQN model with three linear layers.
+        """ Initializes the DQN model with two linear layers.
 
         Args:
             n_observations (int): The number of dimensions of the observation space.
@@ -101,13 +100,11 @@ class DQN(nn.Module):
         """
 
         super(DQN, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 128)
-        self.layer2 = nn.Linear(128, 128)
-        self.layer3 = nn.Linear(128, n_actions)
-
+        self.layer1 = nn.Linear(n_observations, 256)
+        self.layer2 = nn.Linear(256, n_actions)
+       
     def forward(self, state: torch.Tensor) -> torch.Tensor:
-        """
-        Defines the forward pass of the DQN model.
+        """ Defines the forward pass of the DQN model.
 
         Args:
             state (torch.Tensor): The input state tensor for which action values are to be predicted.
@@ -117,8 +114,7 @@ class DQN(nn.Module):
         """
 
         state = F.relu(self.layer1(state))
-        state = F.relu(self.layer2(state))
-        return self.layer3(state)
+        return self.layer2(state)
 
 class DQNAgent:
     """ Implements a an agent that learns using a DQN.
@@ -158,12 +154,10 @@ class DQNAgent:
                  epsilon_end: float, 
                  epsilon_decay: int,
                  update_rate: float, 
-                 learning_rate: float):
+                 learning_rate: float,
+                 seed: int):
         
         """
-        Initializes the DQNAgent with the given parameters and 
-        initializes the policy and target networks.
-
         Args:
             n_actions (int): Number of possible actions in the environment.
             n_obs (int): Number of observations from the environment.
@@ -175,6 +169,7 @@ class DQNAgent:
             update_rate (float): Rate at which the target network's weights are updated towards 
         the policy network's weights.
             learning_rate (float): Learning rate for the optimizer.
+            seed (int): The seed used for resetting the environment.  
         """
         
         self.n_actions = n_actions
@@ -196,10 +191,12 @@ class DQNAgent:
 
         self.criterion = nn.SmoothL1Loss()
         self.optimizer = optim.AdamW(self.policy_net.parameters(), 
-                                     lr = self.learning_rate, amsgrad=True)
+                                     lr = self.learning_rate, amsgrad = True)
         self.buffer = ReplayBuffer(10000)
 
         self.steps_done = 0
+
+        self.seed = seed
 
     def decay_epsilon(self) -> None:
         """
@@ -212,8 +209,7 @@ class DQNAgent:
         self.steps_done += 1
 
     def select_action(self, state: torch.Tensor) -> torch.Tensor:
-        """
-        Selects an action using epsilon-greedy policy based on the current state.
+        """ Selects an action using epsilon-greedy policy based on the current state.
 
         Args:
         - state (torch.Tensor): The current state of the environment.
@@ -230,7 +226,7 @@ class DQNAgent:
                 return self.policy_net(state).max(1).indices.view(1, 1)
             
         else:
-            return torch.tensor([[random.randint(0, self.n_actions - 1)]], dtype=torch.long)
+            return torch.tensor([[random.randint(0, self.n_actions - 1)]], dtype = torch.long)
 
     def update(self) -> None:
         """
@@ -249,7 +245,7 @@ class DQNAgent:
         batch = Transition(*zip(*transitions))
 
         # Compute a mask of non-final states and concatenate the batch elements
-        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype=torch.bool)
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype = torch.bool)
         non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
         state_batch = torch.cat(batch.state)
         action_batch = torch.cat(batch.action)
@@ -276,8 +272,7 @@ class DQNAgent:
         self.optimizer.step()
 
     def train(self, env: gym.wrappers, num_episodes: int) -> list:
-        """
-        Trains the agent on the given environment for a specified number of episodes.
+        """ Trains the agent on the given environment for a specified number of episodes.
 
         Args:
             env (gym.wrappers): The environment to train the agent on.
@@ -292,10 +287,10 @@ class DQNAgent:
         for i_episode in tqdm(range(num_episodes)):
             
             # Reset the environment (start new episode) and get the starting state
-            state, _ = env.reset()
+            state, _ = env.reset(seed = self.seed)
 
             # Convert the state into a tensor to facilitate training
-            state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
+            state = torch.tensor(state, dtype = torch.float32).unsqueeze(0)
                 
             for t in count():
                 
@@ -314,7 +309,7 @@ class DQNAgent:
                 if terminated:
                     next_state = None
                 else:
-                    next_state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
+                    next_state = torch.tensor(observation, dtype = torch.float32).unsqueeze(0)
 
                 # Store the transition into the buffer
                 agent.buffer.push(state, action, reward, next_state)
@@ -346,42 +341,57 @@ if __name__ == "__main__":
     env = gym.make("CartPole-v1")
 
     # Set the hyper-parameters
-    BATCH_SIZE = 128
+    BATCH_SIZE = 64
     GAMMA = 0.99
     EPS_START = 0.9
     EPS_END = 0.05
     EPS_DECAY = 1000
     TAU = 0.005
-    LR = 1e-4
+    LR = 1e-3
 
-    # Reset the environment to get the number of 
-    # dimensions of the observation space and the number 
-    # of available actions
-    state, info = env.reset()
-    n_observations = len(state)
+    # Get the number of dimensions of the observation space 
+    # and the number of available actions
+    n_observations = env.observation_space.shape[0]
     n_actions = env.action_space.n
 
     # Set the number of episodes
-    num_episodes = 600
+    num_episodes = 450
 
-    # Declare the DQN agent
-    agent = DQNAgent(
-        n_actions=n_actions,
-        n_obs=n_observations,
-        batch_size=BATCH_SIZE,
-        discount_factor=GAMMA,
-        epsilon_start=EPS_START,
-        epsilon_decay=EPS_DECAY,
-        epsilon_end=EPS_END,
-        update_rate=TAU,
-        learning_rate=LR
-    )
+    # Declare a list to store the performance of the algorithm over seeds
+    episode_durations_over_seeds = []
 
-    # Train the DQN agent
-    episode_durations = agent.train(env=env, num_episodes=num_episodes)
+    for seed in [1, 2, 3, 5, 8]: # Fibonacci seeds
 
-    # Plot the episode durations
-    plot_episode_durations(algorithm="DQN", episode_durations=episode_durations, num_episodes=num_episodes)
+        # Set the seed
+        torch.manual_seed(seed)
+        random.seed(seed)
+
+        # Declare the DQN agent
+        agent = DQNAgent(
+            n_actions = n_actions,
+            n_obs = n_observations,
+            batch_size = BATCH_SIZE,
+            discount_factor = GAMMA,
+            epsilon_start = EPS_START,
+            epsilon_decay = EPS_DECAY,
+            epsilon_end = EPS_END,
+            update_rate = TAU,
+            learning_rate = LR,
+            seed = seed
+        )
+
+        # Train the DQN agent
+        episode_durations = agent.train(env = env, num_episodes = num_episodes)
+
+        # Record the performance of the algorithm
+        episode_durations_over_seeds.append(episode_durations)
+
+    # Plot the performance recorded over the last seed
+    seed_episode_durations = episode_durations_over_seeds[0]
+    plot_single_episode(algorithm = "DQN", episode_durations = seed_episode_durations, num_episodes = num_episodes)
+
+    # Plot the performance of the algorithm over the seeds
+    plot_multiple_episodes(algorithm = "DQN", episode_durations_over_seeds = episode_durations_over_seeds)
 
     # Close the environment
     env.close()

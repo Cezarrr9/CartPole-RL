@@ -136,6 +136,7 @@ class DQNAgent:
         optimizer (torch.optim.Optimizer): Optimizer for learning the policy network's parameters.
         buffer (ReplayBuffer): Replay buffer for storing experiences.
         steps_done (int): Counter for the number of steps taken (for epsilon decay).
+        seed (int): The seed used for resetting the environment.
 
     Methods:
         decay_epsilon():  Decays the epsilon value used for epsilon-greedy action selection,
@@ -212,10 +213,10 @@ class DQNAgent:
         """ Selects an action using epsilon-greedy policy based on the current state.
 
         Args:
-        - state (torch.Tensor): The current state of the environment.
+            state (torch.Tensor): The current state of the environment.
 
         Returns:
-        - torch.Tensor: The action to be taken.
+            torch.Tensor: The action to be taken.
         """
 
         # If the random selected number is bigger than epsilon, then select

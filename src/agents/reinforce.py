@@ -24,7 +24,7 @@ else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
 
-# Import the plotting function
+# Import the plotting functions
 from src.utils.plot import plot_single_episode, plot_multiple_episodes
 
 class PolicyNetwork(nn.Module):
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         # Set the seed
         torch.manual_seed(seed)
 
-        # Declare the Reinforce agent
+        # Declare the REINFORCE agent
         agent = ReinforceAgent(learning_rate = learning_rate,
                             discount_factor = discount_factor,
                             n_actions = n_actions,

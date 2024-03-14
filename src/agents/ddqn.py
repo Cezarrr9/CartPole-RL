@@ -351,10 +351,10 @@ if __name__ == "__main__":
     BATCH_SIZE = 64
     GAMMA = 0.99
     EPS_START = 0.9
-    EPS_END = 0.05
-    EPS_DECAY = 1000
+    EPS_END = 0.005
+    EPS_DECAY = 1200
     TAU = 0.005
-    LR = 1e-3
+    LR = 0.001
 
     # Get the number of dimensions of the observation space 
     # and the number of available actions
@@ -362,7 +362,7 @@ if __name__ == "__main__":
     n_actions = env.action_space.n
 
     # Set the number of episodes
-    num_episodes = 450
+    num_episodes = 350
 
     # Declare a list to store the performance of the algorithm over seeds
     episode_durations_over_seeds = []

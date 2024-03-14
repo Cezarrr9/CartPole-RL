@@ -22,14 +22,14 @@ else:
     print(f"Please set the {env_var_name} environment variable to your 'CartPole-RL' directory path.")
     sys.exit(1)
 
-# Import the plotting function
+# Import the plotting functions
 from src.utils.plot import plot_single_episode, plot_multiple_episodes
 
 # Import a function for discretizing the state space
 from src.utils.bucketize import bucketize
 
 class SarsaAgent:
-    """SARSA Agent
+    """ SARSA Agent
     
     Attributes:
         n_actions (int): The number of actions available for the agent.
@@ -55,6 +55,14 @@ class SarsaAgent:
                  discount_factor: float,
                  min_epsilon: float, 
                  seed: int) -> None:
+        """
+        Args:
+            n_actions (int): The number of actions available for the agent.
+            min_learning_rate (float): The minimum value that the learning rate can take.
+            discount_factor (float): The discount factor used in the SARSA algorithm. 
+            min_epsilon (float): The minimum value that the epsilon threshold can take.
+            seed (int): The seed used for resetting the environment.
+        """
         
         self.n_actions = n_actions
 
@@ -70,7 +78,7 @@ class SarsaAgent:
         self.seed = seed
 
     def select_action(self, state: tuple[float, float, float, float]) -> int:
-        """Selects an action using the epsilon greedy policy.
+        """ Selects an action using the epsilon greedy policy.
         
         Args:
             state (tuple[float]): The discretized version of the state.
@@ -113,7 +121,7 @@ class SarsaAgent:
         self.q_values[state][action] += self.learning_rate * temporal_difference
 
     def decay_epsilon(self, step: int) -> None:
-        """Decreases the value of the epsilon threshold over time.
+        """ Decreases the value of the epsilon threshold over time.
         
         Args:
             step (int): The number of steps passed until the current moment.
@@ -122,7 +130,7 @@ class SarsaAgent:
         self.epsilon =  max(self.min_epsilon, min(1.0, 1.0 - math.log10((step + 1) / 25)))
     
     def decay_learning_rate(self, step: int) -> None:
-        """Decreases the value of the learning rate over time.
+        """ Decreases the value of the learning rate over time.
         
         Args:
             step (int): The number of steps passed until the current moment.
@@ -131,7 +139,7 @@ class SarsaAgent:
         self.learning_rate =  max(self.min_learning_rate, min(1.0, 1.0 - math.log10((step + 1) / 25)))
 
     def train(self, env: gym.wrappers, num_episodes: int) -> list:
-        """Train the agent using the Q-learning algorithm.
+        """ Train the agent using the Q-learning algorithm.
         
         Args:
             env (gym.wrappers): The environment where the agent is trained. 

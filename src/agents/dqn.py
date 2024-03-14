@@ -387,7 +387,7 @@ if __name__ == "__main__":
         # Record the performance of the algorithm
         episode_durations_over_seeds.append(episode_durations)
 
-    # Plot the performance recorded over the last seed
+    # Plot the performance recorded over the first seed
     seed_episode_durations = episode_durations_over_seeds[0]
     plot_single_episode(algorithm = "DQN", episode_durations = seed_episode_durations, num_episodes = num_episodes)
 
